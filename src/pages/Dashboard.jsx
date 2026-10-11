@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { UserPlus, Search, Trash2 } from 'lucide-react' // 1. Adicionámos o ícone Trash2
+import { useState, useEffect } from 'react' 
+import { UserPlus, Search, Trash2 } from 'lucide-react'
 import ModalPaciente from '../components/ModalPaciente'
 import './Dashboard.css'
 
@@ -7,18 +7,31 @@ function Dashboard() {
   const [modalAberto, setModalAberto] = useState(false)
   const [termoPesquisa, setTermoPesquisa] = useState('')
 
-  const [pacientes, setPacientes] = useState([
-    {
-      id: 1,
-      iniciais: 'MF',
-      nome: 'Maria Fernandes',
-      idade: 54,
-      condicao: 'Lombalgia crónica',
-      proximaSessao: 'Hoje, 14:30',
-      contacto: '912 345 678',
-      estado: 'Em tratamento'
+ 
+  const [pacientes, setPacientes] = useState(() => {
+    const dadosGuardados = localStorage.getItem('pacientes-fisiogest')
+    
+    if (dadosGuardados) {
+      return JSON.parse(dadosGuardados) 
     }
-  ])
+    
+    return [
+      {
+        id: 1,
+        iniciais: 'MF',
+        nome: 'Maria Fernandes',
+        idade: 54,
+        condicao: 'Lombalgia crónica',
+        proximaSessao: 'Hoje, 14:30',
+        contacto: '912 345 678',
+        estado: 'Em tratamento'
+      }
+    ]
+  })
+
+  useEffect(() => {
+    localStorage.setItem('pacientes-fisiogest', JSON.stringify(pacientes))
+  }, [pacientes])
 
   const adicionarNovoPaciente = (novoPaciente) => {
     setPacientes([novoPaciente, ...pacientes])
@@ -26,7 +39,6 @@ function Dashboard() {
 
   const removerPaciente = (idParaRemover) => {
     const confirmar = window.confirm("Tem a certeza que deseja remover este paciente?")
-    
     if (confirmar) {
       const listaAtualizada = pacientes.filter(paciente => paciente.id !== idParaRemover)
       setPacientes(listaAtualizada)
@@ -77,7 +89,7 @@ function Dashboard() {
               <th>PRÓXIMA SESSÃO</th>
               <th>CONTATO</th>
               <th>ESTADO</th>
-              <th></th> {}
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -94,8 +106,6 @@ function Dashboard() {
                 <td>{paciente.proximaSessao}</td>
                 <td>{paciente.contacto}</td>
                 <td><span className="badge badge-green">{paciente.estado}</span></td>
-                
-                {}
                 <td style={{ textAlign: 'right' }}>
                   <button 
                     className="btn-remover" 
