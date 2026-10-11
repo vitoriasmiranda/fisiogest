@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react' 
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import ModalMarcacao from '../components/ModalMarcacao'
 import './Agenda.css'
 
 function Agenda() {
   const [vista, setVista] = useState('dia') 
   const [modalAberto, setModalAberto] = useState(false)
-  
   const [dataAtual, setDataAtual] = useState(new Date()) 
   
   const [marcacoes, setMarcacoes] = useState(() => {
@@ -22,6 +21,15 @@ function Agenda() {
     setMarcacoes([...marcacoes, novaMarcacao])
   }
 
+  // NOVA FUNÇÃO: Cancelar marcação
+  const removerMarcacao = (idParaRemover) => {
+    const confirmar = window.confirm("Tem a certeza que deseja cancelar esta marcação?")
+    if (confirmar) {
+      const listaAtualizada = marcacoes.filter(m => m.id !== idParaRemover)
+      setMarcacoes(listaAtualizada)
+    }
+  }
+
   const formatarDataParaPesquisa = (data) => {
     const ano = data.getFullYear()
     const mes = String(data.getMonth() + 1).padStart(2, '0')
@@ -29,14 +37,12 @@ function Agenda() {
     return `${ano}-${mes}-${dia}` 
   }
 
-  // Navegar nos dias
   const mudarDia = (direcao) => {
     const novaData = new Date(dataAtual)
     novaData.setDate(novaData.getDate() + direcao)
     setDataAtual(novaData)
   }
 
-  // Navegar nos meses
   const mudarMes = (direcao) => {
     const novaData = new Date(dataAtual)
     novaData.setMonth(novaData.getMonth() + direcao)
@@ -49,7 +55,6 @@ function Agenda() {
     '17:00', '18:00', '19:00', '20:00', '21:00'
   ]
 
-  // Lógica do Calendário Mensal
   const diasNoMes = new Date(dataAtual.getFullYear(), dataAtual.getMonth() + 1, 0).getDate()
   const diasDoMesArray = Array.from({ length: diasNoMes }, (_, i) => i + 1)
 
@@ -72,18 +77,8 @@ function Agenda() {
         
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
           <div className="view-toggle">
-            <button 
-              className={vista === 'dia' ? 'active' : ''} 
-              onClick={() => setVista('dia')}
-            >
-              Dia
-            </button>
-            <button 
-              className={vista === 'mes' ? 'active' : ''} 
-              onClick={() => setVista('mes')}
-            >
-              Mês
-            </button>
+            <button className={vista === 'dia' ? 'active' : ''} onClick={() => setVista('dia')}>Dia</button>
+            <button className={vista === 'mes' ? 'active' : ''} onClick={() => setVista('mes')}>Mês</button>
           </div>
 
           <button 
@@ -114,11 +109,19 @@ function Agenda() {
                 <div className="time">{horaSlot}</div>
                 
                 {marcacao ? (
-                  <div className="appointment booked">
+                  <div className="appointment booked" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className="appointment-info">
                       <strong>{marcacao.nomePaciente}</strong>
                       <span>{marcacao.motivo} (às {marcacao.hora})</span>
                     </div>
+                    {/* Botão de apagar a consulta */}
+                    <button 
+                      onClick={() => removerMarcacao(marcacao.id)}
+                      style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px' }}
+                      title="Cancelar marcação"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 ) : (
                   <div className="appointment free">
@@ -151,7 +154,6 @@ function Agenda() {
               return (
                 <div key={dia} className={`day ${isHoje ? 'today' : ''}`}>
                   {dia}
-                  {}
                   {temMarcacaoNoDia(dia) && <div className="dot-appointment" style={{ backgroundColor: '#0d9488', width: '6px', height: '6px', borderRadius: '50%', margin: '0 auto', marginTop: '4px' }}></div>}
                 </div>
               )
@@ -161,10 +163,7 @@ function Agenda() {
       )}
 
       {modalAberto && (
-        <ModalMarcacao 
-          aoFechar={() => setModalAberto(false)} 
-          aoGuardar={adicionarNovaMarcacao} 
-        />
+        <ModalMarcacao aoFechar={() => setModalAberto(false)} aoGuardar={adicionarNovaMarcacao} />
       )}
 
     </div>
