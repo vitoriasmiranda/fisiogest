@@ -19,11 +19,12 @@
   padding: 0;
 }
 
-.sidebar .menu li {
+sidebar .menu li {
   padding: 15px 10px;
   margin-bottom: 5px;
   border-radius: 5px;
   cursor: pointer;
+  transition: background-color 0.2s ease; 
 }
 
 .sidebar .menu li.active, .sidebar .menu li:hover {

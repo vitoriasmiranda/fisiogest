@@ -1,7 +1,7 @@
 import { Activity, Users, Calendar } from 'lucide-react'
 import './Sidebar.css'
 
-function Sidebar() {
+function Sidebar({ paginaAtual, setPaginaAtual }) {
   return (
     <aside className="sidebar">
       <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -11,15 +11,27 @@ function Sidebar() {
       
       <nav className="menu" style={{ marginTop: '30px' }}>
         <ul style={{ listStyle: 'none', padding: 0 }}>
-          <li style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', cursor: 'pointer' }}>
+          
+          {}
+          <li 
+            className={paginaAtual === 'doentes' ? 'active' : ''} 
+            onClick={() => setPaginaAtual('doentes')}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', cursor: 'pointer', borderRadius: '8px' }}
+          >
             <Users size={20} />
             <span>Doentes</span>
           </li>
           
-          <li className="active" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', backgroundColor: '#1e293b', borderRadius: '8px', cursor: 'pointer' }}>
+          {}
+          <li 
+            className={paginaAtual === 'agenda' ? 'active' : ''} 
+            onClick={() => setPaginaAtual('agenda')}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', cursor: 'pointer', borderRadius: '8px' }}
+          >
             <Calendar size={20} />
             <span>Agenda</span>
           </li>
+
         </ul>
       </nav>
     </aside>
