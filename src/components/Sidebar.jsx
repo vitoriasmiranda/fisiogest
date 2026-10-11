@@ -14,12 +14,12 @@ function Sidebar({ paginaAtual, setPaginaAtual }) {
           
           {}
           <li 
-            className={paginaAtual === 'doentes' ? 'active' : ''} 
-            onClick={() => setPaginaAtual('doentes')}
+            className={paginaAtual === 'pacientes' ? 'active' : ''} 
+            onClick={() => setPaginaAtual('pacientes')}
             style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', cursor: 'pointer', borderRadius: '8px' }}
           >
             <Users size={20} />
-            <span>Doentes</span>
+            <span>Pacientes</span>
           </li>
           
           {}

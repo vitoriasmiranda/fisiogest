@@ -6,7 +6,7 @@ import Agenda from './pages/Agenda'
 
 function App() {
 
-  const [paginaAtual, setPaginaAtual] = useState('doentes')
+  const [paginaAtual, setPaginaAtual] = useState('pacientes')
 
   return (
     <div style={{ display: 'flex', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
@@ -17,7 +17,7 @@ function App() {
       <main style={{ marginLeft: '250px', padding: '40px', width: '100%', boxSizing: 'border-box' }}>
         
         {}
-        {paginaAtual === 'doentes' ? <Dashboard /> : <Agenda />}
+        {paginaAtual === 'pacientes' ? <Dashboard /> : <Agenda />}
         
       </main>
     </div>
