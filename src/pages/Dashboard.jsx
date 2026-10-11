@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { UserPlus, Search, Trash2, Eye } from 'lucide-react' 
+import { UserPlus, Search, Trash2, Eye, Users, CalendarClock } from 'lucide-react' 
 import ModalPaciente from '../components/ModalPaciente'
 import DetalhesPaciente from '../components/DetalhesPaciente'
 import './Dashboard.css'
@@ -8,6 +8,8 @@ function Dashboard() {
   const [modalAberto, setModalAberto] = useState(false)
   const [termoPesquisa, setTermoPesquisa] = useState('')
   const [pacienteSelecionado, setPacienteSelecionado] = useState(null)
+  
+  const [marcacoes, setMarcacoes] = useState([])
 
   const [pacientes, setPacientes] = useState(() => {
     const dadosGuardados = localStorage.getItem('pacientes-fisiogest')
@@ -28,6 +30,13 @@ function Dashboard() {
       }
     ]
   })
+
+  useEffect(() => {
+    const dadosMarcacoes = localStorage.getItem('marcacoes-fisiogest')
+    if (dadosMarcacoes) {
+      setMarcacoes(JSON.parse(dadosMarcacoes))
+    }
+  }, [])
 
   useEffect(() => {
     localStorage.setItem('pacientes-fisiogest', JSON.stringify(pacientes))
@@ -62,6 +71,17 @@ function Dashboard() {
     )
   })
 
+
+  const totalPacientes = pacientes.length;
+
+  const dataDeHoje = new Date()
+  const ano = dataDeHoje.getFullYear()
+  const mes = String(dataDeHoje.getMonth() + 1).padStart(2, '0')
+  const dia = String(dataDeHoje.getDate()).padStart(2, '0')
+  const dataHojeFormatada = `${ano}-${mes}-${dia}`
+  
+  const consultasDeHoje = marcacoes.filter(m => m.data === dataHojeFormatada).length;
+
   if (pacienteSelecionado) {
     return (
       <DetalhesPaciente 
@@ -85,6 +105,32 @@ function Dashboard() {
           Adicionar Novo Paciente
         </button>
       </div>
+
+      {}
+      <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
+        
+        <div style={{ flex: 1, backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ backgroundColor: '#e0f2fe', padding: '16px', borderRadius: '50%', display: 'flex' }}>
+            <Users size={28} color="#0284c7" />
+          </div>
+          <div>
+            <p style={{ margin: 0, color: '#64748b', fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase' }}>Total de Pacientes</p>
+            <h2 style={{ margin: 0, color: '#0f172a', fontSize: '32px' }}>{totalPacientes}</h2>
+          </div>
+        </div>
+
+        <div style={{ flex: 1, backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ backgroundColor: '#ccfbf1', padding: '16px', borderRadius: '50%', display: 'flex' }}>
+            <CalendarClock size={28} color="#0d9488" />
+          </div>
+          <div>
+            <p style={{ margin: 0, color: '#64748b', fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase' }}>Consultas Hoje</p>
+            <h2 style={{ margin: 0, color: '#0f172a', fontSize: '32px' }}>{consultasDeHoje}</h2>
+          </div>
+        </div>
+
+      </div>
+      {}
 
       <div className="card">
         <div className="card-header">
