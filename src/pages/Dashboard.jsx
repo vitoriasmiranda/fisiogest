@@ -1,20 +1,19 @@
-import { useState, useEffect } from 'react' 
-import { UserPlus, Search, Trash2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { UserPlus, Search, Trash2, Eye } from 'lucide-react' 
 import ModalPaciente from '../components/ModalPaciente'
+import DetalhesPaciente from '../components/DetalhesPaciente'
 import './Dashboard.css'
 
 function Dashboard() {
   const [modalAberto, setModalAberto] = useState(false)
   const [termoPesquisa, setTermoPesquisa] = useState('')
+  const [pacienteSelecionado, setPacienteSelecionado] = useState(null)
 
- 
   const [pacientes, setPacientes] = useState(() => {
     const dadosGuardados = localStorage.getItem('pacientes-fisiogest')
-    
     if (dadosGuardados) {
       return JSON.parse(dadosGuardados) 
     }
-    
     return [
       {
         id: 1,
@@ -24,7 +23,8 @@ function Dashboard() {
         condicao: 'Lombalgia crónica',
         proximaSessao: 'Hoje, 14:30',
         contacto: '912 345 678',
-        estado: 'Em tratamento'
+        estado: 'Em tratamento',
+        historico: 'Hérnia discal L4-L5 diagnosticada em 2019. Toma anti-inflamatórios por indicação médica.'
       }
     ]
   })
@@ -42,7 +42,16 @@ function Dashboard() {
     if (confirmar) {
       const listaAtualizada = pacientes.filter(paciente => paciente.id !== idParaRemover)
       setPacientes(listaAtualizada)
+      if (pacienteSelecionado && pacienteSelecionado.id === idParaRemover) {
+        setPacienteSelecionado(null)
+      }
     }
+  }
+
+  const atualizarPaciente = (pacienteAtualizado) => {
+    const novaLista = pacientes.map(p => p.id === pacienteAtualizado.id ? pacienteAtualizado : p)
+    setPacientes(novaLista)
+    setPacienteSelecionado(pacienteAtualizado)
   }
 
   const pacientesFiltrados = pacientes.filter((paciente) => {
@@ -52,6 +61,16 @@ function Dashboard() {
       paciente.condicao.toLowerCase().includes(termo)
     )
   })
+
+  if (pacienteSelecionado) {
+    return (
+      <DetalhesPaciente 
+        paciente={pacienteSelecionado} 
+        aoVoltar={() => setPacienteSelecionado(null)}
+        aoAtualizar={atualizarPaciente} 
+      />
+    )
+  }
 
   return (
     <div className="dashboard">
@@ -106,7 +125,15 @@ function Dashboard() {
                 <td>{paciente.proximaSessao}</td>
                 <td>{paciente.contacto}</td>
                 <td><span className="badge badge-green">{paciente.estado}</span></td>
-                <td style={{ textAlign: 'right' }}>
+                
+                <td style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button 
+                    className="btn-acao" 
+                    onClick={() => setPacienteSelecionado(paciente)}
+                    title="Ver ficha"
+                  >
+                    <Eye size={18} />
+                  </button>
                   <button 
                     className="btn-remover" 
                     onClick={() => removerPaciente(paciente.id)}

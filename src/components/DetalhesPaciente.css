@@ -1,0 +1,218 @@
+.detalhes-page {
+  padding: 10px;
+  animation: fadeIn 0.3s ease;
+}
+
+.btn-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 24px;
+  padding: 0;
+}
+
+.btn-voltar:hover {
+  color: #0f172a;
+}
+
+.detalhes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+}
+
+.detalhes-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.detalhes-header-left h2 {
+  margin: 0 0 4px 0;
+  color: #0f172a;
+  font-size: 24px;
+}
+
+.subtitle {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* O Segredo do layout: Grelha com a coluna direita maior (2fr) */
+.detalhes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr; 
+  gap: 24px;
+}
+
+.detalhes-col-esq {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card-seccao {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.altura-total {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.card-titulo h3, .card-seccao > h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.dados-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dado-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #334155;
+  font-size: 14px;
+}
+
+.texto-corrido {
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Secção de Notas */
+.adicionar-nota {
+  margin-top: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.adicionar-nota label {
+  display: block;
+  font-size: 14px;
+  color: #334155;
+  margin-bottom: 12px;
+}
+
+.adicionar-nota textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  outline: none;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.nota-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.ajuda {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.contador {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.btn-registar-nota {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #0d9488;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.lista-notas {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nota-item {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.nota-data {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.nota-item p {
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.badge-select {
+  appearance: none;
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 6px 24px 6px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23166534'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  transition: all 0.2s;
+}
+
+.badge-select:hover {
+  background-color: #bbf7d0;
+}

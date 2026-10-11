@@ -25,7 +25,8 @@ function ModalPaciente({ aoFechar, aoGuardar }) {
       condicao: condicao,
       proximaSessao: 'Por agendar',
       contacto: contato,
-      estado: 'Em avaliação'
+      estado: 'Em avaliação',
+      historico: historico
     }
 
     aoGuardar(novoPaciente)

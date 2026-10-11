@@ -108,3 +108,10 @@
   background-color: #fee2e2;
   color: #ef4444;
 }
+
+.btn-acao { 
+  background: transparent; 
+  border: none; 
+  color: #64748b; 
+  cursor: pointer; 
+  padding: 8px; }
