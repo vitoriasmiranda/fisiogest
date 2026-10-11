@@ -90,3 +90,21 @@
   font-size: 12px;
   font-weight: bold;
 }
+
+.btn-remover {
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remover:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+}

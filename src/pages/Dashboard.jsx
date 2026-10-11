@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { UserPlus, Search } from 'lucide-react'
+import { UserPlus, Search, Trash2 } from 'lucide-react' // 1. Adicionámos o ícone Trash2
 import ModalPaciente from '../components/ModalPaciente'
 import './Dashboard.css'
 
 function Dashboard() {
   const [modalAberto, setModalAberto] = useState(false)
+  const [termoPesquisa, setTermoPesquisa] = useState('')
 
   const [pacientes, setPacientes] = useState([
     {
@@ -22,6 +23,23 @@ function Dashboard() {
   const adicionarNovoPaciente = (novoPaciente) => {
     setPacientes([novoPaciente, ...pacientes])
   }
+
+  const removerPaciente = (idParaRemover) => {
+    const confirmar = window.confirm("Tem a certeza que deseja remover este paciente?")
+    
+    if (confirmar) {
+      const listaAtualizada = pacientes.filter(paciente => paciente.id !== idParaRemover)
+      setPacientes(listaAtualizada)
+    }
+  }
+
+  const pacientesFiltrados = pacientes.filter((paciente) => {
+    const termo = termoPesquisa.toLowerCase()
+    return (
+      paciente.nome.toLowerCase().includes(termo) || 
+      paciente.condicao.toLowerCase().includes(termo)
+    )
+  })
 
   return (
     <div className="dashboard">
@@ -42,7 +60,12 @@ function Dashboard() {
           <h3 style={{ margin: 0 }}>Pacientes recentes</h3>
           <div className="search-box">
             <Search size={16} color="#94a3b8" />
-            <input type="text" placeholder="Pesquisar paciente..." />
+            <input 
+              type="text" 
+              placeholder="Pesquisar paciente..." 
+              value={termoPesquisa}
+              onChange={(e) => setTermoPesquisa(e.target.value)}
+            />
           </div>
         </div>
 
@@ -54,10 +77,11 @@ function Dashboard() {
               <th>PRÓXIMA SESSÃO</th>
               <th>CONTATO</th>
               <th>ESTADO</th>
+              <th></th> {}
             </tr>
           </thead>
           <tbody>
-            {pacientes.map((paciente) => (
+            {pacientesFiltrados.map((paciente) => (
               <tr key={paciente.id}>
                 <td style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                   <div className="avatar">{paciente.iniciais}</div>
@@ -70,13 +94,23 @@ function Dashboard() {
                 <td>{paciente.proximaSessao}</td>
                 <td>{paciente.contacto}</td>
                 <td><span className="badge badge-green">{paciente.estado}</span></td>
+                
+                {}
+                <td style={{ textAlign: 'right' }}>
+                  <button 
+                    className="btn-remover" 
+                    onClick={() => removerPaciente(paciente.id)}
+                    title="Remover paciente"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       
-      {}
       {modalAberto && <ModalPaciente aoFechar={() => setModalAberto(false)} aoGuardar={adicionarNovoPaciente} />}
       
     </div>
