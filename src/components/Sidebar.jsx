@@ -9,7 +9,7 @@ function Sidebar({ paginaAtual, setPaginaAtual }) {
     <aside 
       className="sidebar"
       style={{ 
-        width: recolhido ? '84px' : '240px', 
+        width: recolhido ? '80px' : '240px', 
         transition: 'width 0.3s ease',
         display: 'flex',
         flexDirection: 'column',
@@ -19,11 +19,11 @@ function Sidebar({ paginaAtual, setPaginaAtual }) {
       }}
     >
       {}
-      <div className="logo" style={{ 
+      <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
         gap: '12px', 
-        padding: '32px 24px 40px 24px', 
+        padding: '32px 20px', 
         justifyContent: recolhido ? 'center' : 'flex-start' 
       }}>
         <Activity size={28} color="#2dd4bf" style={{ minWidth: '28px' }} />
@@ -31,16 +31,15 @@ function Sidebar({ paginaAtual, setPaginaAtual }) {
       </div>
       
       {}
-      <nav className="menu" style={{ flex: 1, padding: '0 16px' }}>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <nav style={{ flex: 1, padding: '0 12px' }}>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
           
           <li 
-            className={paginaAtual === 'pacientes' ? 'active' : ''} 
             onClick={() => setPaginaAtual('pacientes')}
             title="Pacientes"
             style={{ 
               display: 'flex', alignItems: 'center', gap: '14px', 
-              padding: '14px 16px', cursor: 'pointer', borderRadius: '10px',
+              padding: '14px', cursor: 'pointer', borderRadius: '10px',
               backgroundColor: paginaAtual === 'pacientes' ? '#1e293b' : 'transparent',
               justifyContent: recolhido ? 'center' : 'flex-start',
               transition: 'all 0.2s'
@@ -51,12 +50,11 @@ function Sidebar({ paginaAtual, setPaginaAtual }) {
           </li>
           
           <li 
-            className={paginaAtual === 'agenda' ? 'active' : ''} 
             onClick={() => setPaginaAtual('agenda')}
             title="Agenda"
             style={{ 
               display: 'flex', alignItems: 'center', gap: '14px', 
-              padding: '14px 16px', cursor: 'pointer', borderRadius: '10px',
+              padding: '14px', cursor: 'pointer', borderRadius: '10px',
               backgroundColor: paginaAtual === 'agenda' ? '#1e293b' : 'transparent',
               justifyContent: recolhido ? 'center' : 'flex-start',
               transition: 'all 0.2s'
@@ -70,21 +68,21 @@ function Sidebar({ paginaAtual, setPaginaAtual }) {
       </nav>
 
       {}
-      <div style={{ padding: '0 16px 32px 16px' }}>
+      <div style={{ padding: '0 12px 24px 12px' }}>
         <div style={{ borderTop: '1px solid #1e293b', paddingTop: '16px' }}>
-          <li 
+          <div 
             onClick={() => setRecolhido(!recolhido)}
             title="Recolher menu"
             style={{ 
               display: 'flex', alignItems: 'center', gap: '14px', 
-              padding: '14px 16px', cursor: 'pointer', borderRadius: '10px', listStyle: 'none',
+              padding: '14px', cursor: 'pointer', borderRadius: '10px',
               justifyContent: recolhido ? 'center' : 'flex-start', color: '#94a3b8',
               transition: 'all 0.2s'
             }}
           >
             {recolhido ? <PanelLeftOpen size={22} style={{ minWidth: '22px' }} /> : <PanelLeftClose size={22} style={{ minWidth: '22px' }} />}
             {!recolhido && <span style={{ fontSize: '15px' }}>Recolher</span>}
-          </li>
+          </div>
         </div>
       </div>
 
