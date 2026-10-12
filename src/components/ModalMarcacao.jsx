@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { supabase } from '../supabase' 
 import { X } from 'lucide-react'
 import './ModalMarcacao.css'
+
 function ModalMarcacao({ aoFechar, aoGuardar }) {
   const [pacienteId, setPacienteId] = useState('')
   const [data, setData] = useState('')
@@ -10,10 +12,19 @@ function ModalMarcacao({ aoFechar, aoGuardar }) {
   const [pacientes, setPacientes] = useState([])
 
   useEffect(() => {
-    const dadosGuardados = localStorage.getItem('pacientes-fisiogest')
-    if (dadosGuardados) {
-      setPacientes(JSON.parse(dadosGuardados))
+    const carregarPacientes = async () => {
+      const { data, error } = await supabase
+        .from('pacientes')
+        .select('id, nome') 
+      
+      if (error) {
+        console.error("Erro ao carregar pacientes no modal:", error)
+      } else if (data) {
+        setPacientes(data)
+      }
     }
+
+    carregarPacientes()
   }, [])
 
   const submeterFormulario = (e) => {
@@ -27,13 +38,11 @@ function ModalMarcacao({ aoFechar, aoGuardar }) {
     }
 
     const novaMarcacao = {
-      id: Date.now(),
       pacienteId: pacienteSelecionado.id,
       nomePaciente: pacienteSelecionado.nome,
       data: data,
       hora: hora,
-      motivo: motivo,
-      estado: 'Agendada' 
+      motivo: motivo
     }
 
     aoGuardar(novaMarcacao)
@@ -51,7 +60,6 @@ function ModalMarcacao({ aoFechar, aoGuardar }) {
         </div>
 
         <form onSubmit={submeterFormulario}>
-          {/* Menu de seleção de pacientes dinâmico */}
           <div className="form-group">
             <label>Paciente</label>
             <select 

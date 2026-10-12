@@ -1,9 +1,66 @@
-import { useState } from 'react'
-import { ArrowLeft, Phone, Calendar, FileText, Plus } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../supabase' 
+import { ArrowLeft, Phone, Calendar, FileText, Plus, ClipboardList } from 'lucide-react'
 import './DetalhesPaciente.css'
 
 function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
   const [textoNota, setTextoNota] = useState('')
+  const [proximaSessao, setProximaSessao] = useState('A calcular...') 
+  const [motivoSessao, setMotivoSessao] = useState('') 
+
+  useEffect(() => {
+    const buscarProximaSessao = async () => {
+      if (!paciente) return;
+
+      const { data, error } = await supabase
+        .from('marcacoes')
+        .select('data, hora, motivo')
+        .eq('pacienteId', paciente.id) 
+
+      if (error) {
+        console.error("Erro ao buscar sessões:", error)
+        setProximaSessao('Erro ao carregar')
+        return
+      }
+
+      if (data && data.length > 0) {
+        const hoje = new Date()
+        hoje.setHours(0, 0, 0, 0)
+
+        const consultasFuturas = data.filter(m => {
+          const [ano, mes, dia] = m.data.split('-')
+          const dataConsulta = new Date(ano, mes - 1, dia)
+          return dataConsulta >= hoje
+        })
+
+        if (consultasFuturas.length === 0) {
+          setProximaSessao("Por agendar")
+          setMotivoSessao("")
+          return
+        }
+
+        consultasFuturas.sort((a, b) => new Date(a.data) - new Date(b.data))
+        const proxima = consultasFuturas[0]
+
+        const [anoProxima, mesProxima, diaProxima] = proxima.data.split('-')
+        const dataProximaConsulta = new Date(anoProxima, mesProxima - 1, diaProxima)
+        
+        if (dataProximaConsulta.getTime() === hoje.getTime()) {
+          setProximaSessao(`Hoje, ${proxima.hora}`)
+        } else {
+          setProximaSessao(`${dataProximaConsulta.toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })}, ${proxima.hora}`)
+        }
+        
+        setMotivoSessao(proxima.motivo)
+        
+      } else {
+        setProximaSessao("Por agendar")
+        setMotivoSessao("")
+      }
+    }
+
+    buscarProximaSessao()
+  }, [paciente])
 
   if (!paciente) return null;
 
@@ -78,8 +135,16 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
               </div>
               <div className="dado-item">
                 <Calendar size={16} color="#64748b" />
-                <span>Próxima sessão: {paciente.proximaSessao}</span>
+                <span>Próxima sessão: {proximaSessao}</span>
               </div>
+              
+              {}
+              {motivoSessao && (
+                <div className="dado-item" style={{ marginTop: '8px', color: '#0d9488', fontWeight: '500' }}>
+                  <ClipboardList size={16} color="#0d9488" />
+                  <span>Motivo: {motivoSessao}</span>
+                </div>
+              )}
             </div>
           </div>
 

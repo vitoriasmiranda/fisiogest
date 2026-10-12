@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react' 
+import { supabase } from '../supabase' 
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import ModalMarcacao from '../components/ModalMarcacao'
 import './Agenda.css'
@@ -7,26 +8,56 @@ function Agenda() {
   const [vista, setVista] = useState('dia') 
   const [modalAberto, setModalAberto] = useState(false)
   const [dataAtual, setDataAtual] = useState(new Date()) 
-  
-  const [marcacoes, setMarcacoes] = useState(() => {
-    const dadosGuardados = localStorage.getItem('marcacoes-fisiogest')
-    return dadosGuardados ? JSON.parse(dadosGuardados) : []
-  })
 
-  useEffect(() => {
-    localStorage.setItem('marcacoes-fisiogest', JSON.stringify(marcacoes))
-  }, [marcacoes])
+  const [marcacoes, setMarcacoes] = useState([])
 
-  const adicionarNovaMarcacao = (novaMarcacao) => {
-    setMarcacoes([...marcacoes, novaMarcacao])
+  const carregarMarcacoes = async () => {
+    const { data, error } = await supabase
+      .from('marcacoes')
+      .select('*')
+    
+    if (error) {
+      console.error("Erro a buscar marcações:", error)
+    } else if (data) {
+      setMarcacoes(data)
+    }
   }
 
-  // NOVA FUNÇÃO: Cancelar marcação
-  const removerMarcacao = (idParaRemover) => {
+  useEffect(() => {
+    carregarMarcacoes()
+  }, [])
+
+  const adicionarNovaMarcacao = async (novaMarcacao) => {
+    const { id, ...dadosParaNuvem } = novaMarcacao;
+
+    const { data, error } = await supabase
+      .from('marcacoes')
+      .insert([dadosParaNuvem])
+      .select();
+
+    if (error) {
+      console.error("Erro ao guardar marcação:", error);
+      alert("Houve um erro ao guardar na nuvem!");
+    } else if (data) {
+      setMarcacoes([...marcacoes, data[0]]);
+    }
+  }
+
+  const removerMarcacao = async (idParaRemover) => {
     const confirmar = window.confirm("Tem a certeza que deseja cancelar esta marcação?")
     if (confirmar) {
-      const listaAtualizada = marcacoes.filter(m => m.id !== idParaRemover)
-      setMarcacoes(listaAtualizada)
+      const { error } = await supabase
+        .from('marcacoes')
+        .delete()
+        .eq('id', idParaRemover);
+
+      if (error) {
+        console.error("Erro ao remover:", error);
+        alert("Houve um erro ao apagar na nuvem!");
+      } else {
+        const listaAtualizada = marcacoes.filter(m => m.id !== idParaRemover)
+        setMarcacoes(listaAtualizada)
+      }
     }
   }
 
@@ -114,7 +145,7 @@ function Agenda() {
                       <strong>{marcacao.nomePaciente}</strong>
                       <span>{marcacao.motivo} (às {marcacao.hora})</span>
                     </div>
-                    {/* Botão de apagar a consulta */}
+                    {}
                     <button 
                       onClick={() => removerMarcacao(marcacao.id)}
                       style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px' }}

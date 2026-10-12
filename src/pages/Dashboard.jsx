@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { supabase } from '../supabase' 
 import { UserPlus, Search, Trash2, Eye, Users, CalendarClock } from 'lucide-react' 
 import ModalPaciente from '../components/ModalPaciente'
 import DetalhesPaciente from '../components/DetalhesPaciente'
@@ -11,55 +12,96 @@ function Dashboard() {
   
   const [marcacoes, setMarcacoes] = useState([])
 
-  const [pacientes, setPacientes] = useState(() => {
-    const dadosGuardados = localStorage.getItem('pacientes-fisiogest')
-    if (dadosGuardados) {
-      return JSON.parse(dadosGuardados) 
+  
+  const [pacientes, setPacientes] = useState([])
+
+  const carregarPacientes = async () => {
+    const { data, error } = await supabase
+      .from('pacientes')
+      .select('*')
+      .order('id', { ascending: false })
+    
+    if (error) {
+      console.error("Erro a buscar pacientes:", error)
+    } else if (data) {
+      setPacientes(data)
     }
-    return [
-      {
-        id: 1,
-        iniciais: 'MF',
-        nome: 'Maria Fernandes',
-        idade: 54,
-        condicao: 'Lombalgia crónica',
-        contacto: '912 345 678',
-        estado: 'Em tratamento',
-        historico: 'Hérnia discal L4-L5 diagnosticada em 2019. Toma anti-inflamatórios por indicação médica.'
-      }
-    ]
-  })
+  }
 
   useEffect(() => {
-    const dadosMarcacoes = localStorage.getItem('marcacoes-fisiogest')
-    if (dadosMarcacoes) {
-      setMarcacoes(JSON.parse(dadosMarcacoes))
-    }
+    carregarPacientes()
   }, [])
 
-  useEffect(() => {
-    localStorage.setItem('pacientes-fisiogest', JSON.stringify(pacientes))
-  }, [pacientes])
-
-  const adicionarNovoPaciente = (novoPaciente) => {
-    setPacientes([novoPaciente, ...pacientes])
-  }
-
-  const removerPaciente = (idParaRemover) => {
-    const confirmar = window.confirm("Tem a certeza que deseja remover este paciente?")
-    if (confirmar) {
-      const listaAtualizada = pacientes.filter(paciente => paciente.id !== idParaRemover)
-      setPacientes(listaAtualizada)
-      if (pacienteSelecionado && pacienteSelecionado.id === idParaRemover) {
-        setPacienteSelecionado(null)
-      }
+  const carregarMarcacoes = async () => {
+    const { data, error } = await supabase
+      .from('marcacoes')
+      .select('*')
+    if (data) {
+      setMarcacoes(data)
     }
   }
 
-  const atualizarPaciente = (pacienteAtualizado) => {
-    const novaLista = pacientes.map(p => p.id === pacienteAtualizado.id ? pacienteAtualizado : p)
-    setPacientes(novaLista)
-    setPacienteSelecionado(pacienteAtualizado)
+  useEffect(() => {
+    carregarPacientes()
+    carregarMarcacoes()
+  }, [])
+
+  const adicionarNovoPaciente = async (novoPaciente) => {
+    
+    const { id, proximaSessao, ...dadosParaNuvem } = novoPaciente;
+
+    const { data, error } = await supabase
+      .from('pacientes')
+      .insert([dadosParaNuvem])
+      .select(); 
+
+    if (error) {
+      console.error("Erro ao guardar paciente:", error);
+      alert("Houve um erro ao guardar na nuvem!");
+    } else if (data) {
+     
+      setPacientes([data[0], ...pacientes]);
+    }
+  }
+
+  const removerPaciente = async (idParaRemover) => {
+    const confirmar = window.confirm("Tem a certeza que deseja remover este paciente?");
+    if (confirmar) {
+      const { error } = await supabase
+        .from('pacientes')
+        .delete()
+        .eq('id', idParaRemover);
+
+      if (error) {
+        console.error("Erro ao remover:", error);
+        alert("Houve um erro ao apagar na nuvem!");
+      } else {
+        const listaAtualizada = pacientes.filter(paciente => paciente.id !== idParaRemover);
+        setPacientes(listaAtualizada);
+        
+        if (pacienteSelecionado && pacienteSelecionado.id === idParaRemover) {
+          setPacienteSelecionado(null);
+        }
+      }
+    }
+  }
+  
+  const atualizarPaciente = async (pacienteAtualizado) => {
+    const { id, ...dadosParaNuvem } = pacienteAtualizado;
+    
+    const { error } = await supabase
+      .from('pacientes')
+      .update(dadosParaNuvem)
+      .eq('id', id);
+
+    if (error) {
+      console.error("Erro ao atualizar paciente:", error);
+      alert("Houve um erro ao guardar as alterações na nuvem!");
+    } else {
+      const novaLista = pacientes.map(p => p.id === id ? pacienteAtualizado : p);
+      setPacientes(novaLista);
+      setPacienteSelecionado(pacienteAtualizado);
+    }
   }
 
   const pacientesFiltrados = pacientes.filter((paciente) => {
@@ -203,6 +245,16 @@ function Dashboard() {
                 </td>
               </tr>
             ))}
+            
+            {}
+            {pacientesFiltrados.length === 0 && (
+              <tr>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                  Nenhum paciente encontrado. Clique em "Adicionar Novo Paciente" para começar.
+                </td>
+              </tr>
+            )}
+            
           </tbody>
         </table>
       </div>
