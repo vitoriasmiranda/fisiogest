@@ -106,19 +106,16 @@ function Agenda() {
           <p style={{ color: '#64748b', marginTop: '5px' }}>Faça a gestão das marcações e horários.</p>
         </div>
         
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <div className="view-toggle">
-            <button className={vista === 'dia' ? 'active' : ''} onClick={() => setVista('dia')}>Dia</button>
-            <button className={vista === 'mes' ? 'active' : ''} onClick={() => setVista('mes')}>Mês</button>
-          </div>
+        <div className="agenda-actions">
+            <div className="view-toggle">
+              <button className={vista === 'dia' ? 'active' : ''} onClick={() => setVista('dia')}>Dia</button>
+              <button className={vista === 'mes' ? 'active' : ''} onClick={() => setVista('mes')}>Mês</button>
+            </div>
 
-          <button 
-            onClick={() => setModalAberto(true)}
-            style={{ backgroundColor: '#0d9488', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}
-          >
-            <Plus size={18} /> Nova Marcação
-          </button>
-        </div>
+            <button className="btn-nova-marcacao" onClick={() => setModalAberto(true)}>
+              <Plus size={18} /> Nova Marcação
+            </button>
+         </div>
       </div>
 
       {vista === 'dia' ? (
@@ -178,6 +175,9 @@ function Agenda() {
           </div>
           
           <div className="days">
+            {Array.from({ length: new Date(dataAtual.getFullYear(), dataAtual.getMonth(), 1).getDay() }).map((_, i) => (
+                <div key={`vazio-${i}`} />
+                ))}
             {diasDoMesArray.map((dia) => {
               const hoje = new Date();
               const isHoje = dia === hoje.getDate() && dataAtual.getMonth() === hoje.getMonth() && dataAtual.getFullYear() === hoje.getFullYear();

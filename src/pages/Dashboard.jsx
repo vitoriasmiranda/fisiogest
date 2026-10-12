@@ -173,27 +173,27 @@ function Dashboard() {
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
-        <div style={{ flex: 1, backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ backgroundColor: '#e0f2fe', padding: '16px', borderRadius: '50%', display: 'flex' }}>
-            <Users color="#0284c7" size={28} />
-          </div>
-          <div>
-            <p style={{ margin: 0, color: '#64748b', fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase' }}>Total de Pacientes</p>
-            <h2 style={{ margin: 0, color: '#0f172a', fontSize: '32px' }}>{totalPacientes}</h2>
-          </div>
+          <div className="stats-row">
+      <div className="stat-card">
+        <div className="stat-icon" style={{ backgroundColor: '#e0f2fe' }}>
+          <Users color="#0284c7" size={28} />
         </div>
-
-        <div style={{ flex: 1, backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ backgroundColor: '#ccfbf1', padding: '16px', borderRadius: '50%', display: 'flex' }}>
-            <CalendarClock color="#0d9488" size={28} />
-          </div>
-          <div>
-            <p style={{ margin: 0, color: '#64748b', fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase' }}>Consultas Hoje</p>
-            <h2 style={{ margin: 0, color: '#0f172a', fontSize: '32px' }}>{consultasDeHoje}</h2>
-          </div>
+        <div>
+          <p className="stat-label">Total de Pacientes</p>
+          <h2 className="stat-value">{totalPacientes}</h2>
         </div>
       </div>
+
+      <div className="stat-card">
+        <div className="stat-icon" style={{ backgroundColor: '#ccfbf1' }}>
+          <CalendarClock color="#0d9488" size={28} />
+        </div>
+        <div>
+          <p className="stat-label">Consultas Hoje</p>
+          <h2 className="stat-value">{consultasDeHoje}</h2>
+        </div>
+      </div>
+    </div>
 
       <div className="card">
         <div className="card-header">
@@ -209,54 +209,53 @@ function Dashboard() {
           </div>
         </div>
 
-        <table className="patients-table">
-          <thead>
-            <tr>
-              <th>NOME</th>
-              <th>CONDIÇÃO</th>
-              <th>PRÓXIMA SESSÃO</th>
-              <th>CONTATO</th>
-              <th>ESTADO</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {pacientesFiltrados.map((paciente) => (
-              <tr key={paciente.id}>
-                <td style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  <div className="avatar">{paciente.iniciais}</div>
-                  <div>
-                    <strong style={{ color: '#0f172a' }}>{paciente.nome}</strong>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>{paciente.idade} anos</div>
-                  </div>
-                </td>
-                <td>{paciente.condicao}</td>
-                <td><strong>{obterProximaSessao(paciente.id)}</strong></td>
-                <td>{paciente.contacto}</td>
-                <td><span className="badge badge-green">{paciente.estado}</span></td>
-                
-                <td style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                  <button className="btn-acao" onClick={() => setPacienteSelecionado(paciente)} title="Ver ficha">
-                    <Eye size={18} />
-                  </button>
-                  <button className="btn-remover" onClick={() => removerPaciente(paciente.id)} title="Remover paciente">
-                    <Trash2 size={18} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            
-            {}
-            {pacientesFiltrados.length === 0 && (
-              <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
-                  Nenhum paciente encontrado. Clique em "Adicionar Novo Paciente" para começar.
-                </td>
-              </tr>
-            )}
-            
-          </tbody>
-        </table>
+        <div className="table-wrapper">
+  <table className="patients-table">
+    <thead>
+      <tr>
+        <th>NOME</th><th>CONDIÇÃO</th><th>PRÓXIMA SESSÃO</th>
+        <th>CONTATO</th><th>ESTADO</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {pacientesFiltrados.map((paciente) => (
+        <tr key={paciente.id}>
+          <td>
+            <div className="paciente-cell">
+              <div className="avatar">{paciente.iniciais}</div>
+              <div>
+                <strong style={{ color: '#0f172a' }}>{paciente.nome}</strong>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>{paciente.idade} anos</div>
+              </div>
+            </div>
+          </td>
+          <td data-label="Condição">{paciente.condicao}</td>
+          <td data-label="Próxima sessão"><strong>{obterProximaSessao(paciente.id)}</strong></td>
+          <td data-label="Contato">{paciente.contacto}</td>
+          <td data-label="Estado"><span className="badge badge-green">{paciente.estado}</span></td>
+          <td>
+            <div className="acoes">
+              <button className="btn-acao" onClick={() => setPacienteSelecionado(paciente)} title="Ver ficha">
+                <Eye size={18} />
+              </button>
+              <button className="btn-remover" onClick={() => removerPaciente(paciente.id)} title="Remover paciente">
+                <Trash2 size={18} />
+              </button>
+            </div>
+          </td>
+        </tr>
+      ))}
+
+      {pacientesFiltrados.length === 0 && (
+        <tr>
+          <td colSpan="6" className="vazio">
+            Nenhum paciente encontrado. Clique em "Adicionar Novo Paciente" para começar.
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
       </div>
       
       {modalAberto && <ModalPaciente aoFechar={() => setModalAberto(false)} aoGuardar={adicionarNovoPaciente} />}

@@ -75,7 +75,7 @@ function ModalMarcacao({ aoFechar, aoGuardar }) {
             </select>
           </div>
 
-          <div style={{ display: 'flex', gap: '15px' }}>
+          <div className="form-row-marcacao">
             <div className="form-group" style={{ flex: 1 }}>
               <label>Data</label>
               <input 

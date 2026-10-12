@@ -1,24 +1,37 @@
-import { useState } from 'react' 
-import './App.css'
+import { useState } from 'react'
 import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
-import Agenda from './pages/Agenda' 
+import Agenda from './pages/Agenda'
 
 function App() {
-
   const [paginaAtual, setPaginaAtual] = useState('pacientes')
+  const [recolhido, setRecolhido] = useState(false)
+  const [menuAberto, setMenuAberto] = useState(false)
+
+  const navegar = (pagina) => {
+    setPaginaAtual(pagina)
+    setMenuAberto(false)
+  }
 
   return (
-    <div style={{ display: 'flex', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
-      
-      {}
-      <Sidebar paginaAtual={paginaAtual} setPaginaAtual={setPaginaAtual} /> 
-      
-      <main style={{ marginLeft: '250px', padding: '40px', width: '100%', boxSizing: 'border-box' }}>
-        
-        {}
+    <div className="app-layout">
+      <header className="topbar">
+        <button className="menu-btn" onClick={() => setMenuAberto(true)} aria-label="Abrir menu">☰</button>
+        <strong>FisioGest</strong>
+      </header>
+
+      {menuAberto && <div className="sidebar-overlay" onClick={() => setMenuAberto(false)} />}
+
+      <Sidebar
+        paginaAtual={paginaAtual}
+        setPaginaAtual={navegar}
+        recolhido={recolhido}
+        setRecolhido={setRecolhido}
+        aberta={menuAberto}
+      />
+
+      <main className={`app-main ${recolhido ? 'recolhido' : ''}`}>
         {paginaAtual === 'pacientes' ? <Dashboard /> : <Agenda />}
-        
       </main>
     </div>
   )

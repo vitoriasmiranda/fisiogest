@@ -104,3 +104,11 @@
 .btn-salvar:hover {
   background: #0f766e;
 }
+
+.form-row-marcacao { display: flex; gap: 15px; }
+.form-row-marcacao .form-group { flex: 1; min-width: 0; }
+
+@media (max-width: 480px) {
+  .modal-content { padding: 20px; }
+  .form-row-marcacao { flex-direction: column; gap: 0; }
+}

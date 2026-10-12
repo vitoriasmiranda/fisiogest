@@ -216,3 +216,13 @@
 .badge-select:hover {
   background-color: #bbf7d0;
 }
+
+@media (max-width: 900px) {
+  .detalhes-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .detalhes-page { padding: 0; }
+  .detalhes-header { flex-direction: column; gap: 16px; }
+  .card-seccao { padding: 16px; }
+  .nota-footer { flex-direction: column; gap: 4px; }
+}
