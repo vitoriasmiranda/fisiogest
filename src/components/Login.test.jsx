@@ -56,42 +56,9 @@ describe('<Login />', () => {
     expect(supabase.auth.signInWithPassword).not.toHaveBeenCalled()
   })
 
-  describe('Esqueci minha senha', () => {
-    it('envia o link para o e-mail digitado, voltando para o próprio app', async () => {
-      const user = userEvent.setup()
-      render(<Login />)
-
-      await user.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
-      await user.type(screen.getByLabelText('E-mail'), ' joao@clinica.com ')
-      await user.click(screen.getByRole('button', { name: 'Enviar link' }))
-
-      expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith('joao@clinica.com', {
-        redirectTo: window.location.origin,
-      })
-      expect(screen.getByRole('status')).toHaveTextContent(/Se esse e-mail tiver uma conta/)
-    })
-
-    it('limite de envios do Supabase vira uma mensagem clara', async () => {
-      const user = userEvent.setup()
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-      supabase.auth.resetPasswordForEmail.mockResolvedValue({ error: { message: 'email rate limit exceeded' } })
-      render(<Login />)
-
-      await user.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
-      await user.type(screen.getByLabelText('E-mail'), 'joao@clinica.com')
-      await user.click(screen.getByRole('button', { name: 'Enviar link' }))
-
-      expect(await screen.findByRole('alert')).toHaveTextContent(/Aguarde alguns minutos/)
-    })
-
-    it('"Voltar para o login" volta para a tela de entrar', async () => {
-      const user = userEvent.setup()
-      render(<Login />)
-
-      await user.click(screen.getByRole('button', { name: 'Esqueci minha senha' }))
-      await user.click(screen.getByRole('button', { name: 'Voltar para o login' }))
-
-      expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
-    })
+  it('orienta quem esqueceu a senha a falar com a administradora', () => {
+    render(<Login />)
+    expect(screen.getByText('Esqueceu a senha? Fale com a Vitória.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Esqueci minha senha/ })).not.toBeInTheDocument()
   })
 })
