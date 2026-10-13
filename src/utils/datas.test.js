@@ -67,7 +67,6 @@ describe('formatarDataHoraNota', () => {
   })
 
   it('aceita o texto ISO que o Supabase devolve (convertido para o horário local)', () => {
-
     expect(formatarDataHoraNota('2026-10-13T12:30:00+00:00')).toBe('13 OUT 2026, 09:30')
   })
 

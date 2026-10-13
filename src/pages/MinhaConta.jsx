@@ -1,7 +1,6 @@
 import { UserCircle } from 'lucide-react'
 import FormNovaSenha from '../components/FormNovaSenha'
 
-/** Dados do login e troca de senha (para trocar a senha provisória no primeiro acesso). */
 function MinhaConta({ email }) {
   return (
     <div style={{ maxWidth: 520 }}>

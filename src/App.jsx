@@ -9,10 +9,8 @@ import MinhaConta from './pages/MinhaConta'
 
 function App() {
   const [session, setSession] = useState(null)
-  // Enquanto o Supabase verifica a sessão salva, não mostramos o login (evita a tela "piscar").
+  
   const [aVerificarSessao, setAVerificarSessao] = useState(true)
-  // true quando a pessoa chegou pelo link de "Esqueci minha senha"
-  // (o endereço do link traz "type=recovery"; o evento PASSWORD_RECOVERY confirma)
   const [redefinindoSenha, setRedefinindoSenha] = useState(() =>
     /type=recovery/.test(`${window.location.hash}${window.location.search}`),
   )
