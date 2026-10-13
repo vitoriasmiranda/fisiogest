@@ -1,68 +1,98 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
-import { ArrowLeft, Phone, Calendar, FileText, Plus, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Phone, Calendar, FileText, Plus, ClipboardList, Pencil, Cake } from 'lucide-react'
 import MensagemErro from './MensagemErro'
-import { formatarDataNota } from '../utils/datas'
+import ModalPaciente from './ModalPaciente'
+import { formatarDataHoraNota, parseDataISO } from '../utils/datas'
 import { descreverProximaSessao, obterProximaMarcacao } from '../utils/marcacoes'
-import { ESTADOS, LIMITE_NOTA } from '../utils/pacientes'
+import { descreverIdade, ESTADOS, LIMITE_NOTA } from '../utils/pacientes'
 import './DetalhesPaciente.css'
 
+/**
+ * Ficha do paciente.
+ * aoAtualizar(alteracoes) recebe só os campos que mudaram e devolve uma mensagem de erro ou null.
+ */
 function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
   const [textoNota, setTextoNota] = useState('')
-  const [proximaSessao, setProximaSessao] = useState('A calcular...')
+  const [proximaSessao, setProximaSessao] = useState('Calculando...')
   const [motivoSessao, setMotivoSessao] = useState('')
+  const [notas, setNotas] = useState([])
+  const [carregandoNotas, setCarregandoNotas] = useState(true)
+  const [salvandoNota, setSalvandoNota] = useState(false)
+  const [editando, setEditando] = useState(false)
   const [erro, setErro] = useState(null)
 
+  const pacienteId = paciente?.id
+
   useEffect(() => {
-    if (!paciente) return
+    if (pacienteId === undefined) return
     let ativo = true
 
-    const buscarProximaSessao = async () => {
-      const { data, error } = await supabase
-        .from('marcacoes')
-        .select('data, hora, motivo, pacienteId')
-        .eq('pacienteId', paciente.id)
+    const carregar = async () => {
+      const [resMarcacoes, resNotas] = await Promise.all([
+        supabase.from('marcacoes').select('data, hora, motivo, pacienteId').eq('pacienteId', pacienteId),
+        supabase.from('notas').select('*').eq('paciente_id', pacienteId).order('criado_em', { ascending: false }),
+      ])
       if (!ativo) return
 
-      if (error) {
-        console.error('Erro ao buscar sessões:', error)
+      if (resMarcacoes.error) {
+        console.error('Erro ao buscar sessões:', resMarcacoes.error)
         setProximaSessao('Erro ao carregar')
-        return
+      } else {
+        const agora = new Date()
+        const proxima = obterProximaMarcacao(resMarcacoes.data ?? [], pacienteId, agora)
+        setProximaSessao(descreverProximaSessao(proxima, agora))
+        setMotivoSessao(proxima?.motivo ?? '')
       }
-      const agora = new Date()
-      const proxima = obterProximaMarcacao(data ?? [], paciente.id, agora)
-      setProximaSessao(descreverProximaSessao(proxima, agora))
-      setMotivoSessao(proxima?.motivo ?? '')
+
+      if (resNotas.error) {
+        console.error('Erro ao buscar notas:', resNotas.error)
+        setErro('Não foi possível carregar as notas de evolução.')
+      } else {
+        setNotas(resNotas.data ?? [])
+      }
+      setCarregandoNotas(false)
     }
 
-    buscarProximaSessao()
+    carregar()
     return () => { ativo = false }
-  }, [paciente])
+  }, [pacienteId])
 
   if (!paciente) return null
 
-  const notas = paciente.notas || []
-
-  const registarNota = async () => {
-    const texto = textoNota.trim()
+  const salvarNota = async () => {
+    const texto = textoNota.trim().slice(0, LIMITE_NOTA)
     if (texto === '') return
 
-    const novaNota = {
-      id: Date.now(),
-      data: formatarDataNota(new Date()),
-      texto: texto.slice(0, LIMITE_NOTA),
-    }
+    setSalvandoNota(true)
+    // Cada nota é uma linha própria: duas pessoas salvando ao mesmo tempo não apagam a nota uma da outra.
+    const { data, error } = await supabase.from('notas').insert([{ paciente_id: paciente.id, texto }]).select()
+    setSalvandoNota(false)
 
-    const erroGuardar = await aoAtualizar({ ...paciente, notas: [novaNota, ...notas] })
-    // Só limpa o texto se gravou — se falhar, a nota escrita não se perde.
-    setErro(erroGuardar ?? null)
-    if (!erroGuardar) setTextoNota('')
+    if (error) {
+      console.error('Erro ao salvar nota:', error)
+      // Mantém o texto digitado para poder tentar de novo.
+      setErro('Não foi possível salvar a nota. Tente novamente.')
+      return
+    }
+    setErro(null)
+    setNotas((atuais) => [data[0], ...atuais])
+    setTextoNota('')
   }
+
+  const alterarEstado = async (estado) => {
+    const erroGuardar = await aoAtualizar({ estado })
+    setErro(erroGuardar ?? null)
+  }
+
+  const nascimento = paciente.data_nascimento
+    ? parseDataISO(paciente.data_nascimento).toLocaleDateString('pt-BR')
+    : null
 
   return (
     <div className="detalhes-page">
       <button className="btn-voltar" onClick={aoVoltar}>
-        <ArrowLeft size={16} /> Voltar aos pacientes
+        <ArrowLeft size={16} /> Voltar para pacientes
       </button>
 
       <MensagemErro mensagem={erro} aoFechar={() => setErro(null)} />
@@ -72,23 +102,25 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
           <div className="avatar large">{paciente.iniciais}</div>
           <div>
             <h2>{paciente.nome}</h2>
-            <p className="subtitle">{paciente.idade} anos · {paciente.condicao}</p>
+            <p className="subtitle">{descreverIdade(paciente)} · {paciente.condicao}</p>
           </div>
         </div>
-        
-        <select 
-          className="badge-select"
-          aria-label="Estado do tratamento"
-          value={paciente.estado}
-          onChange={async (e) => {
-            const erroGuardar = await aoAtualizar({ ...paciente, estado: e.target.value })
-            setErro(erroGuardar ?? null)
-          }}
-        >
-          {ESTADOS.map((estado) => (
-            <option key={estado} value={estado}>{estado}</option>
-          ))}
-        </select>
+
+        <div className="detalhes-header-acoes">
+          <button className="btn-editar-paciente" onClick={() => setEditando(true)}>
+            <Pencil size={16} /> Editar dados
+          </button>
+          <select
+            className="badge-select"
+            aria-label="Estado do tratamento"
+            value={paciente.estado}
+            onChange={(e) => alterarEstado(e.target.value)}
+          >
+            {ESTADOS.map((estado) => (
+              <option key={estado} value={estado}>{estado}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="detalhes-grid">
@@ -104,10 +136,16 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
                 <span>{paciente.contacto}</span>
               </div>
               <div className="dado-item">
+                <Cake size={16} color="#64748b" />
+                <span>
+                  {nascimento ? `Nascimento: ${nascimento}` : 'Data de nascimento não informada'}
+                </span>
+              </div>
+              <div className="dado-item">
                 <Calendar size={16} color="#64748b" />
                 <span>Próxima sessão: {proximaSessao}</span>
               </div>
-              
+
               {motivoSessao && (
                 <div className="dado-item" style={{ marginTop: '8px', color: '#0d9488', fontWeight: '500' }}>
                   <ClipboardList size={16} color="#0d9488" />
@@ -123,7 +161,7 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
               <h3>Histórico clínico</h3>
             </div>
             <p className="texto-corrido">
-              {paciente.historico ? paciente.historico : "Nenhum histórico registado na admissão."}
+              {paciente.historico ? paciente.historico : 'Nenhum histórico registrado na admissão.'}
             </p>
           </div>
         </div>
@@ -131,7 +169,7 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
         <div className="detalhes-col-dir">
           <div className="card-seccao altura-total">
             <h3>Notas de evolução</h3>
-            
+
             <div className="adicionar-nota">
               <label htmlFor="nova-nota">Adicionar nota da sessão</label>
               <textarea
@@ -143,23 +181,28 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
                 onChange={(e) => setTextoNota(e.target.value)}
               ></textarea>
               <div className="nota-footer">
-                <span className="ajuda">A nota fica registada com a data de hoje.</span>
+                <span className="ajuda">A nota é registrada com a data e o horário de agora.</span>
                 <span className="contador">{textoNota.length}/{LIMITE_NOTA}</span>
               </div>
-              <button className="btn-registar-nota" onClick={registarNota} disabled={textoNota.trim() === ''}>
-                <Plus size={16} /> Registar nota
+              <button className="btn-registar-nota" onClick={salvarNota} disabled={textoNota.trim() === '' || salvandoNota}>
+                <Plus size={16} /> {salvandoNota ? 'Salvando...' : 'Salvar nota'}
               </button>
             </div>
 
             <div className="lista-notas">
-              {notas.length === 0 ? (
+              {carregandoNotas ? (
+                <p style={{ color: '#94a3b8', fontSize: '14px' }}>Carregando notas...</p>
+              ) : notas.length === 0 ? (
                 <p style={{ color: '#94a3b8', fontSize: '14px', fontStyle: 'italic' }}>
-                  Ainda não existem notas de evolução registadas.
+                  Ainda não há notas de evolução registradas.
                 </p>
               ) : (
                 notas.map((nota) => (
                   <div key={nota.id} className="nota-item">
-                    <span className="nota-data">{nota.data}</span>
+                    <span className="nota-data">
+                      {formatarDataHoraNota(nota.criado_em)}
+                      {nota.autor ? ` · ${nota.autor}` : ''}
+                    </span>
                     <p>{nota.texto}</p>
                   </div>
                 ))
@@ -169,6 +212,14 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
           </div>
         </div>
       </div>
+
+      {editando && (
+        <ModalPaciente
+          paciente={paciente}
+          aoFechar={() => setEditando(false)}
+          aoGuardar={aoAtualizar}
+        />
+      )}
     </div>
   )
 }

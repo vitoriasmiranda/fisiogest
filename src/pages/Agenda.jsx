@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react'
 import ModalMarcacao from '../components/ModalMarcacao'
 import MensagemErro from '../components/MensagemErro'
 import { useConfirmacao } from '../hooks/useConfirmacao'
@@ -28,21 +28,32 @@ const HORARIOS_TRABALHO = [
 
 const estiloBotaoIcone = { background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }
 
-function CartaoMarcacao({ marcacao, aoRemover }) {
+function CartaoMarcacao({ marcacao, aoEditar, aoRemover }) {
+  const descricao = `${marcacao.nomePaciente} às ${normalizarHora(marcacao.hora)}`
   return (
     <div className="appointment booked" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <div className="appointment-info">
         <strong>{marcacao.nomePaciente}</strong>
         <span>{marcacao.motivo} (às {normalizarHora(marcacao.hora)})</span>
       </div>
-      <button
-        onClick={() => aoRemover(marcacao.id)}
-        style={{ ...estiloBotaoIcone, color: '#ef4444', padding: '8px' }}
-        title="Cancelar marcação"
-        aria-label={`Cancelar marcação de ${marcacao.nomePaciente} às ${normalizarHora(marcacao.hora)}`}
-      >
-        <Trash2 size={18} />
-      </button>
+      <div style={{ display: 'flex' }}>
+        <button
+          onClick={() => aoEditar(marcacao)}
+          style={{ ...estiloBotaoIcone, color: '#64748b', padding: '8px' }}
+          title="Editar agendamento"
+          aria-label={`Editar agendamento de ${descricao}`}
+        >
+          <Pencil size={18} />
+        </button>
+        <button
+          onClick={() => aoRemover(marcacao.id)}
+          style={{ ...estiloBotaoIcone, color: '#ef4444', padding: '8px' }}
+          title="Cancelar agendamento"
+          aria-label={`Cancelar agendamento de ${descricao}`}
+        >
+          <Trash2 size={18} />
+        </button>
+      </div>
     </div>
   )
 }
@@ -50,6 +61,7 @@ function CartaoMarcacao({ marcacao, aoRemover }) {
 function Agenda() {
   const [vista, setVista] = useState('dia')
   const [modalAberto, setModalAberto] = useState(false)
+  const [marcacaoEditando, setMarcacaoEditando] = useState(null)
   const [dataAtual, setDataAtual] = useState(() => new Date())
   const [hoje] = useState(() => new Date())
   const [marcacoes, setMarcacoes] = useState([])
@@ -62,8 +74,8 @@ function Agenda() {
       const { data, error } = await supabase.from('marcacoes').select('*')
       if (!ativo) return
       if (error) {
-        console.error('Erro a buscar marcações:', error)
-        setErro('Não foi possível carregar as marcações. Verifique a ligação.')
+        console.error('Erro ao buscar agendamentos:', error)
+        setErro('Não foi possível carregar os agendamentos. Verifique sua conexão.')
       }
       else setMarcacoes(data ?? [])
     }
@@ -71,34 +83,54 @@ function Agenda() {
     return () => { ativo = false }
   }, [])
 
-  /** Devolve uma mensagem de erro para o modal, ou null se correu bem. */
-  const adicionarNovaMarcacao = async (novaMarcacao) => {
-    if (existeConflito(marcacoes, novaMarcacao)) {
-      return 'Horário indisponível! Já existe uma consulta marcada para este dia e hora.'
+  const abrirNovo = () => {
+    setMarcacaoEditando(null)
+    setModalAberto(true)
+  }
+
+  const abrirEdicao = (marcacao) => {
+    setMarcacaoEditando(marcacao)
+    setModalAberto(true)
+  }
+
+  const fecharModal = () => {
+    setModalAberto(false)
+    setMarcacaoEditando(null)
+  }
+
+  /** Cria ou atualiza. Devolve uma mensagem de erro para o modal, ou null se deu certo. */
+  const guardarMarcacao = async (dados) => {
+    const idEditando = marcacaoEditando?.id ?? null
+    if (existeConflito(marcacoes, dados, idEditando)) {
+      return 'Horário indisponível! Já existe uma consulta agendada para este dia e horário.'
     }
 
-    const { data, error } = await supabase.from('marcacoes').insert([novaMarcacao]).select()
+    const consulta = idEditando
+      ? supabase.from('marcacoes').update(dados).eq('id', idEditando).select()
+      : supabase.from('marcacoes').insert([dados]).select()
+    const { data, error } = await consulta
 
     if (error) {
-      console.error('Erro ao guardar marcação:', error)
-      // 23505 = unique_violation (se criar a restrição UNIQUE(data, hora) no Supabase)
-      if (error.code === '23505') return 'Horário indisponível! Outra pessoa acabou de marcar este horário.'
-      return 'Houve um erro ao guardar na nuvem!'
+      console.error('Erro ao salvar agendamento:', error)
+      // 23505 = unique_violation da restrição UNIQUE(data, hora) no Supabase
+      if (error.code === '23505') return 'Horário indisponível! Outra pessoa acabou de agendar este horário.'
+      return 'Não foi possível salvar o agendamento. Tente novamente.'
     }
-    setMarcacoes((atuais) => [...atuais, data[0]])
-    setDataAtual(new Date(`${novaMarcacao.data}T00:00`))
-    setModalAberto(false)
+    const salva = data?.[0] ?? { ...marcacaoEditando, ...dados }
+    setMarcacoes((atuais) => (idEditando ? atuais.map((m) => (m.id === idEditando ? salva : m)) : [...atuais, salva]))
+    setDataAtual(new Date(`${dados.data}T00:00`))
+    fecharModal()
     return null
   }
 
   const removerMarcacao = async (idParaRemover) => {
     const marcacao = marcacoes.find((m) => m.id === idParaRemover)
     const ok = await confirmar({
-      titulo: 'Cancelar marcação?',
+      titulo: 'Cancelar agendamento?',
       mensagem: marcacao
-        ? `A sessão de ${marcacao.nomePaciente} às ${normalizarHora(marcacao.hora)} vai ser removida da agenda.`
-        : 'Esta marcação vai ser removida da agenda.',
-      textoConfirmar: 'Cancelar marcação',
+        ? `A sessão de ${marcacao.nomePaciente} às ${normalizarHora(marcacao.hora)} será removida da agenda.`
+        : 'Este agendamento será removido da agenda.',
+      textoConfirmar: 'Cancelar agendamento',
       textoCancelar: 'Manter',
       perigoso: true,
     })
@@ -108,7 +140,7 @@ function Agenda() {
 
     if (error) {
       console.error('Erro ao remover:', error)
-      setErro('Não foi possível cancelar a marcação. Tente novamente.')
+      setErro('Não foi possível cancelar o agendamento. Tente novamente.')
       return
     }
     setErro(null)
@@ -130,7 +162,7 @@ function Agenda() {
       <div className="agenda-header">
         <div>
           <h1 style={{ margin: 0, color: '#0f172a' }}>Agenda</h1>
-          <p style={{ color: '#64748b', marginTop: '5px' }}>Faça a gestão das marcações e horários.</p>
+          <p style={{ color: '#64748b', marginTop: '5px' }}>Gerencie os agendamentos e horários.</p>
         </div>
 
         <div className="agenda-actions">
@@ -139,8 +171,8 @@ function Agenda() {
             <button className={vista === 'mes' ? 'active' : ''} aria-pressed={vista === 'mes'} onClick={() => setVista('mes')}>Mês</button>
           </div>
 
-          <button className="btn-nova-marcacao" onClick={() => setModalAberto(true)}>
-            <Plus size={18} /> Nova Marcação
+          <button className="btn-nova-marcacao" onClick={abrirNovo}>
+            <Plus size={18} /> Novo agendamento
           </button>
         </div>
       </div>
@@ -152,7 +184,7 @@ function Agenda() {
           <div className="date-picker-bar" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px', alignItems: 'center' }}>
             <button style={estiloBotaoIcone} onClick={() => setDataAtual(somarDias(dataAtual, -1))} aria-label="Dia anterior"><ChevronLeft size={20} /></button>
             <span data-testid="titulo-dia" style={{ fontWeight: 'bold', textTransform: 'capitalize' }}>
-              {dataAtual.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })}
+              {dataAtual.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
             </span>
             <button style={estiloBotaoIcone} onClick={() => setDataAtual(somarDias(dataAtual, 1))} aria-label="Dia seguinte"><ChevronRight size={20} /></button>
           </div>
@@ -164,10 +196,10 @@ function Agenda() {
                 <div className="time">{horaSlot}</div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   {doBloco.length > 0 ? (
-                    doBloco.map((m) => <CartaoMarcacao key={m.id} marcacao={m} aoRemover={removerMarcacao} />)
+                    doBloco.map((m) => <CartaoMarcacao key={m.id} marcacao={m} aoEditar={abrirEdicao} aoRemover={removerMarcacao} />)
                   ) : (
                     <div className="appointment free">
-                      <span style={{ color: '#94a3b8' }}>Horário Livre</span>
+                      <span style={{ color: '#94a3b8' }}>Horário livre</span>
                     </div>
                   )}
                 </div>
@@ -179,7 +211,7 @@ function Agenda() {
             <div className="time-slot">
               <div className="time">Outros</div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                {foraDoHorario.map((m) => <CartaoMarcacao key={m.id} marcacao={m} aoRemover={removerMarcacao} />)}
+                {foraDoHorario.map((m) => <CartaoMarcacao key={m.id} marcacao={m} aoEditar={abrirEdicao} aoRemover={removerMarcacao} />)}
               </div>
             </div>
           )}
@@ -189,7 +221,7 @@ function Agenda() {
           <div className="month-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
             <button style={estiloBotaoIcone} onClick={() => setDataAtual(somarMeses(dataAtual, -1))} aria-label="Mês anterior"><ChevronLeft size={20} /></button>
             <span data-testid="titulo-mes" style={{ fontWeight: 'bold', fontSize: '18px', textTransform: 'capitalize' }}>
-              {dataAtual.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })}
+              {dataAtual.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
             </span>
             <button style={estiloBotaoIcone} onClick={() => setDataAtual(somarMeses(dataAtual, 1))} aria-label="Mês seguinte"><ChevronRight size={20} /></button>
           </div>
@@ -216,7 +248,7 @@ function Agenda() {
                   style={{ cursor: 'pointer' }}
                   onClick={() => abrirDia(dia)}
                   onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && abrirDia(dia)}
-                  aria-label={`Dia ${dia}${temMarcacao ? ', com marcações' : ''}`}
+                  aria-label={`Dia ${dia}${temMarcacao ? ', com agendamentos' : ''}`}
                 >
                   {dia}
                   {temMarcacao && <div className="dot-appointment" style={{ backgroundColor: '#0d9488', width: '6px', height: '6px', borderRadius: '50%', margin: '0 auto', marginTop: '4px' }}></div>}
@@ -229,8 +261,10 @@ function Agenda() {
 
       {modalAberto && (
         <ModalMarcacao
-          aoFechar={() => setModalAberto(false)}
-          aoGuardar={adicionarNovaMarcacao}
+          key={marcacaoEditando?.id ?? 'novo'}
+          marcacao={marcacaoEditando}
+          aoFechar={fecharModal}
+          aoGuardar={guardarMarcacao}
           dataInicial={dataISO >= formatarDataISO(hoje) ? dataISO : ''}
         />
       )}

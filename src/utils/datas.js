@@ -39,6 +39,30 @@ export function formatarDataNota(data) {
   return `${data.getDate()} ${MESES_ABREV[data.getMonth()]} ${data.getFullYear()}`
 }
 
+/** Data e hora de uma nota de evolução: "13 OUT 2026, 14:05". Aceita Date ou texto ISO do Supabase. */
+export function formatarDataHoraNota(valor) {
+  const data = valor instanceof Date ? valor : new Date(valor)
+  if (Number.isNaN(data.getTime())) return ''
+  const hora = `${String(data.getHours()).padStart(2, '0')}:${String(data.getMinutes()).padStart(2, '0')}`
+  return `${formatarDataNota(data)}, ${hora}`
+}
+
+/**
+ * Idade em anos completos a partir de "AAAA-MM-DD".
+ * Quem nasceu em 29/02 completa ano em 01/03 nos anos não bissextos.
+ */
+export function calcularIdade(dataNascimento, agora = new Date()) {
+  if (!dataNascimento) return null
+  const nascimento = parseDataISO(dataNascimento)
+  if (Number.isNaN(nascimento.getTime())) return null
+  let idade = agora.getFullYear() - nascimento.getFullYear()
+  const aindaNaoFezAnos =
+    agora.getMonth() < nascimento.getMonth() ||
+    (agora.getMonth() === nascimento.getMonth() && agora.getDate() < nascimento.getDate())
+  if (aindaNaoFezAnos) idade -= 1
+  return idade
+}
+
 /**
  * Soma/subtrai meses sem "saltar" um mês.
  * new Date(2026, 0, 31).setMonth(1) dá 3 de março — aqui fixamos no dia 1.

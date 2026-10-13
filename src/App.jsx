@@ -7,7 +7,7 @@ import Login from './components/Login'
 
 function App() {
   const [session, setSession] = useState(null)
-  // Enquanto o Supabase verifica a sessão guardada, não mostramos o login (evita o "piscar" do ecrã).
+  // Enquanto o Supabase verifica a sessão salva, não mostramos o login (evita a tela "piscar").
   const [aVerificarSessao, setAVerificarSessao] = useState(true)
 
   useEffect(() => {
@@ -34,7 +34,7 @@ function App() {
   }
 
   if (aVerificarSessao) {
-    return <div className="a-carregar" aria-busy="true" style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>A carregar...</div>
+    return <div className="a-carregar" aria-busy="true" style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>Carregando...</div>
   }
 
   if (!session) {

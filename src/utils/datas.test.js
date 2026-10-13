@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  calcularIdade,
   deslocamentoInicioMes,
   diasNoMes,
   formatarDataCurta,
+  formatarDataHoraNota,
   formatarDataISO,
   formatarDataNota,
   normalizarHora,
@@ -56,6 +58,51 @@ describe('formatarDataCurta', () => {
   it('dia + mês abreviado em minúsculas, igual em qualquer navegador', () => {
     expect(formatarDataCurta('2026-10-20')).toBe('20 out')
     expect(formatarDataCurta('2027-01-03')).toBe('3 jan')
+  })
+})
+
+describe('formatarDataHoraNota', () => {
+  it('aceita Date e mostra data e horário', () => {
+    expect(formatarDataHoraNota(new Date(2026, 9, 13, 9, 5))).toBe('13 OUT 2026, 09:05')
+  })
+
+  it('aceita o texto ISO que o Supabase devolve (convertido para o horário local)', () => {
+    // 12:30 UTC = 09:30 em São Paulo (os testes rodam com TZ=America/Sao_Paulo)
+    expect(formatarDataHoraNota('2026-10-13T12:30:00+00:00')).toBe('13 OUT 2026, 09:30')
+  })
+
+  it('valor inválido devolve texto vazio', () => {
+    expect(formatarDataHoraNota('abc')).toBe('')
+  })
+})
+
+describe('calcularIdade', () => {
+  const HOJE = new Date(2026, 9, 13)
+
+  it('já fez aniversário este ano', () => {
+    expect(calcularIdade('1990-01-15', HOJE)).toBe(36)
+  })
+
+  it('ainda não fez aniversário este ano', () => {
+    expect(calcularIdade('1990-12-01', HOJE)).toBe(35)
+  })
+
+  it('faz aniversário hoje', () => {
+    expect(calcularIdade('1990-10-13', HOJE)).toBe(36)
+  })
+
+  it('faz aniversário amanhã', () => {
+    expect(calcularIdade('1990-10-14', HOJE)).toBe(35)
+  })
+
+  it('nascido em 29/02 completa ano em 01/03 nos anos não bissextos', () => {
+    expect(calcularIdade('2000-02-29', new Date(2026, 1, 28))).toBe(25)
+    expect(calcularIdade('2000-02-29', new Date(2026, 2, 1))).toBe(26)
+  })
+
+  it('sem data devolve null', () => {
+    expect(calcularIdade('', HOJE)).toBeNull()
+    expect(calcularIdade(null, HOJE)).toBeNull()
   })
 })
 

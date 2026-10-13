@@ -60,7 +60,7 @@ describe('marcacoesDoDia / marcacoesNoBloco', () => {
 })
 
 describe('marcacoesForaDoHorario', () => {
-  it('apanha marcações fora da grelha para não ficarem invisíveis', () => {
+  it('pega agendamentos fora da grade para não ficarem invisíveis', () => {
     const blocos = ['08:00', '09:00', '10:00']
     expect(marcacoesForaDoHorario(marcacoes, '2026-10-13', blocos).map((m) => m.id)).toEqual([5])
   })
@@ -129,10 +129,18 @@ describe('validarMarcacao', () => {
   it.each([
     [{ pacienteId: '' }, /paciente/i],
     [{ data: '' }, /data/i],
-    [{ hora: '' }, /hora/i],
+    [{ hora: '' }, /horário/i],
     [{ motivo: '   ' }, /motivo/i],
     [{ data: '2026-10-12' }, /passado/i],
   ])('rejeita %o', (alteracao, mensagem) => {
     expect(validarMarcacao({ ...valida, ...alteracao }, AGORA)).toMatch(mensagem)
+  })
+
+  it('ao editar uma sessão antiga, deixa manter a data dela', () => {
+    expect(validarMarcacao({ ...valida, data: '2026-10-01' }, AGORA, '2026-10-01')).toBeNull()
+  })
+
+  it('ao editar, não deixa mover para OUTRA data no passado', () => {
+    expect(validarMarcacao({ ...valida, data: '2026-10-02' }, AGORA, '2026-10-01')).toMatch(/passado/)
   })
 })

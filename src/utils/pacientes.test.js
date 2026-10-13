@@ -1,20 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import {
   classeBadgeEstado,
-  contactoValido,
+  contatoValido,
   criarPaciente,
+  dadosDoFormulario,
+  descreverIdade,
   ESTADOS,
   filtrarPacientes,
+  formularioDoPaciente,
   gerarIniciais,
+  idadeDoPaciente,
   LIMITE_HISTORICO,
   validarPaciente,
 } from './pacientes'
+
+const HOJE = new Date(2026, 9, 13) // 13/10/2026
 
 describe('gerarIniciais', () => {
   it.each([
     ['Maria da Silva', 'MS'],
     ['joão pedro', 'JP'],
-    ['  Ana   Costa  ', 'AC'], // espaços extra
+    ['  Ana   Costa  ', 'AC'], // espaços extras
     ['Ana', 'AN'],
     ['', '?'],
     [null, '?'],
@@ -24,66 +30,121 @@ describe('gerarIniciais', () => {
   })
 })
 
-describe('contactoValido', () => {
-  it.each(['912345678', '+351 912 345 678', '(31) 98765-4321', '+55 31 98765-4321'])('aceita %s', (c) => {
-    expect(contactoValido(c)).toBe(true)
+describe('contatoValido', () => {
+  it.each(['31987654321', '(31) 98765-4321', '+55 31 98765-4321', '3133334444', '912345678'])('aceita %s', (c) => {
+    expect(contatoValido(c)).toBe(true)
   })
 
-  it.each(['123', 'abc123456789', '91234567a', '', '+1234567890123456'])('rejeita %s', (c) => {
-    expect(contactoValido(c)).toBe(false)
+  it.each(['123', 'abc123456789', '3198765432a', '', '+1234567890123456'])('rejeita %s', (c) => {
+    expect(contatoValido(c)).toBe(false)
+  })
+})
+
+describe('idadeDoPaciente / descreverIdade', () => {
+  it('calcula pela data de nascimento', () => {
+    expect(idadeDoPaciente({ data_nascimento: '1992-03-20' }, HOJE)).toBe(34)
+  })
+
+  it('a data de nascimento tem prioridade sobre a idade antiga', () => {
+    expect(idadeDoPaciente({ data_nascimento: '1992-03-20', idade: '20' }, HOJE)).toBe(34)
+  })
+
+  it('paciente antigo sem data de nascimento usa a idade guardada (texto)', () => {
+    expect(idadeDoPaciente({ idade: '40' }, HOJE)).toBe(40)
+  })
+
+  it('sem nenhuma das duas devolve null', () => {
+    expect(idadeDoPaciente({}, HOJE)).toBeNull()
+    expect(idadeDoPaciente({ idade: '' }, HOJE)).toBeNull()
+    expect(idadeDoPaciente({ idade: 'abc' }, HOJE)).toBeNull()
+  })
+
+  it('texto para a tela, com singular e plural', () => {
+    expect(descreverIdade({ data_nascimento: '1992-03-20' }, HOJE)).toBe('34 anos')
+    expect(descreverIdade({ data_nascimento: '2025-05-01' }, HOJE)).toBe('1 ano')
+    expect(descreverIdade({ data_nascimento: '2026-09-01' }, HOJE)).toBe('0 anos')
+    expect(descreverIdade({}, HOJE)).toBe('Idade não informada')
   })
 })
 
 describe('validarPaciente', () => {
-  const valido = { nome: 'Maria Silva', idade: '34', contacto: '912345678', condicao: 'Lombalgia', historico: '' }
+  const valido = { nome: 'Maria Silva', dataNascimento: '1992-03-20', contato: '31987654321', condicao: 'Lombalgia', historico: '' }
 
   it('não devolve erros para dados válidos', () => {
-    expect(validarPaciente(valido)).toEqual({})
+    expect(validarPaciente(valido, HOJE)).toEqual({})
   })
 
-  it('assinala todos os campos obrigatórios em falta', () => {
-    const erros = validarPaciente({ nome: '', idade: '', contacto: '', condicao: '' })
-    expect(Object.keys(erros).sort()).toEqual(['condicao', 'contacto', 'idade', 'nome'])
+  it('aponta todos os campos obrigatórios em falta', () => {
+    const erros = validarPaciente({ nome: '', dataNascimento: '', contato: '', condicao: '' }, HOJE)
+    expect(Object.keys(erros).sort()).toEqual(['condicao', 'contato', 'dataNascimento', 'nome'])
   })
 
   it('nome só com espaços conta como vazio', () => {
-    expect(validarPaciente({ ...valido, nome: '   ' }).nome).toMatch(/obrigatório/)
+    expect(validarPaciente({ ...valido, nome: '   ' }, HOJE).nome).toMatch(/obrigatório/)
   })
 
-  it.each(['-1', '121', '3.5', 'abc'])('rejeita idade %s', (idade) => {
-    expect(validarPaciente({ ...valido, idade }).idade).toMatch(/inválida/)
+  it('rejeita data de nascimento no futuro', () => {
+    expect(validarPaciente({ ...valido, dataNascimento: '2026-10-14' }, HOJE).dataNascimento).toMatch(/futuro/)
   })
 
-  it('aceita idade 0 (bebés)', () => {
-    expect(validarPaciente({ ...valido, idade: '0' }).idade).toBeUndefined()
+  it('aceita quem nasceu hoje', () => {
+    expect(validarPaciente({ ...valido, dataNascimento: '2026-10-13' }, HOJE).dataNascimento).toBeUndefined()
   })
 
-  it('rejeita contacto inválido', () => {
-    expect(validarPaciente({ ...valido, contacto: '12' }).contacto).toMatch(/inválido/)
+  it('rejeita mais de 120 anos', () => {
+    expect(validarPaciente({ ...valido, dataNascimento: '1900-01-01' }, HOJE).dataNascimento).toMatch(/inválida/)
+  })
+
+  it('rejeita telefone inválido', () => {
+    expect(validarPaciente({ ...valido, contato: '12' }, HOJE).contato).toMatch(/inválido/)
   })
 
   it('rejeita histórico acima do limite', () => {
     const historico = 'a'.repeat(LIMITE_HISTORICO + 1)
-    expect(validarPaciente({ ...valido, historico }).historico).toBeDefined()
+    expect(validarPaciente({ ...valido, historico }, HOJE).historico).toBeDefined()
   })
 })
 
-describe('criarPaciente', () => {
-  it('limpa espaços, converte a idade em número e define o estado inicial', () => {
-    const p = criarPaciente({ nome: ' Maria Silva ', idade: '34', contacto: ' 912345678 ', condicao: ' Lombalgia ', historico: '' })
-    expect(p).toEqual({
+describe('dadosDoFormulario / criarPaciente / formularioDoPaciente', () => {
+  const form = { nome: ' Maria Silva ', dataNascimento: '1992-03-20', contato: ' 31987654321 ', condicao: ' Lombalgia ', historico: '' }
+
+  it('limpa espaços e usa os nomes de coluna do banco', () => {
+    expect(dadosDoFormulario(form)).toEqual({
       nome: 'Maria Silva',
       iniciais: 'MS',
-      idade: 34,
-      contacto: '912345678',
+      data_nascimento: '1992-03-20',
+      contacto: '31987654321',
       condicao: 'Lombalgia',
       historico: '',
-      estado: 'Em avaliação',
     })
   })
 
-  it('não envia id (é gerado pelo Supabase)', () => {
-    expect(criarPaciente({ nome: 'A B', idade: '1', contacto: '912345678', condicao: 'x' })).not.toHaveProperty('id')
+  it('a edição não mexe no estado nem no id', () => {
+    const dados = dadosDoFormulario(form)
+    expect(dados).not.toHaveProperty('estado')
+    expect(dados).not.toHaveProperty('id')
+  })
+
+  it('o cadastro novo começa "Em avaliação" e não envia idade nem id', () => {
+    const p = criarPaciente(form)
+    expect(p.estado).toBe('Em avaliação')
+    expect(p).not.toHaveProperty('idade')
+    expect(p).not.toHaveProperty('id')
+  })
+
+  it('preenche o formulário de edição a partir da ficha', () => {
+    const ficha = { id: 1, nome: 'Ana', data_nascimento: '1980-01-02', contacto: '31911112222', condicao: 'Entorse', historico: null }
+    expect(formularioDoPaciente(ficha)).toEqual({
+      nome: 'Ana',
+      dataNascimento: '1980-01-02',
+      contato: '31911112222',
+      condicao: 'Entorse',
+      historico: '',
+    })
+  })
+
+  it('sem ficha devolve formulário vazio', () => {
+    expect(formularioDoPaciente(null)).toEqual({ nome: '', dataNascimento: '', contato: '', condicao: '', historico: '' })
   })
 })
 
@@ -106,7 +167,7 @@ describe('filtrarPacientes', () => {
     expect(filtrarPacientes(pacientes, 'lca').map((p) => p.id)).toEqual([3])
   })
 
-  it('não rebenta com campos em falta', () => {
+  it('não quebra com campos em falta', () => {
     expect(filtrarPacientes([{ id: 9, nome: null }], 'x')).toEqual([])
   })
 })
@@ -117,7 +178,7 @@ describe('classeBadgeEstado', () => {
     expect(new Set(classes).size).toBe(ESTADOS.length)
   })
 
-  it('estado desconhecido usa cinzento', () => {
+  it('estado desconhecido usa cinza', () => {
     expect(classeBadgeEstado('???')).toBe('badge-gray')
   })
 })

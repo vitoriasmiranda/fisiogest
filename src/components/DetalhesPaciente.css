@@ -226,3 +226,37 @@
   .card-seccao { padding: 16px; }
   .nota-footer { flex-direction: column; gap: 4px; }
 }
+.detalhes-header-acoes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn-editar-paciente {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.btn-editar-paciente:hover {
+  background: #f1f5f9;
+}
+
+@media (max-width: 600px) {
+  .detalhes-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+}

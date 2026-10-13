@@ -7,7 +7,7 @@ import MensagemErro from '../components/MensagemErro'
 import { useConfirmacao } from '../hooks/useConfirmacao'
 import { formatarDataISO } from '../utils/datas'
 import { contarMarcacoesNaData, descreverProximaSessao, obterProximaMarcacao } from '../utils/marcacoes'
-import { classeBadgeEstado, filtrarPacientes } from '../utils/pacientes'
+import { classeBadgeEstado, descreverIdade, filtrarPacientes } from '../utils/pacientes'
 import './Dashboard.css'
 
 function Dashboard() {
@@ -32,7 +32,7 @@ function Dashboard() {
       if (!ativo) return
       if (resPacientes.error || resMarcacoes.error) {
         console.error('Erro ao carregar dados:', resPacientes.error || resMarcacoes.error)
-        setErroCarregamento('Não foi possível carregar os dados. Verifique a ligação e tente novamente.')
+        setErroCarregamento('Não foi possível carregar os dados. Verifique sua conexão e tente novamente.')
       }
       setPacientes(resPacientes.data ?? [])
       setMarcacoes(resMarcacoes.data ?? [])
@@ -46,8 +46,8 @@ function Dashboard() {
     const { data, error } = await supabase.from('pacientes').insert([novoPaciente]).select()
 
     if (error) {
-      console.error('Erro ao guardar paciente:', error)
-      return 'Não foi possível guardar o paciente. Tente novamente.'
+      console.error('Erro ao salvar paciente:', error)
+      return 'Não foi possível salvar o paciente. Tente novamente.'
     }
     setPacientes((atuais) => [data[0], ...atuais])
     return null
@@ -57,7 +57,7 @@ function Dashboard() {
     const paciente = pacientes.find((p) => p.id === idParaRemover)
     const ok = await confirmar({
       titulo: `Remover ${paciente?.nome ?? 'paciente'}?`,
-      mensagem: 'A ficha, as notas de evolução e as marcações deste paciente serão apagadas. Esta ação não pode ser desfeita.',
+      mensagem: 'A ficha, as notas de evolução e os agendamentos deste paciente serão apagados. Esta ação não pode ser desfeita.',
       textoConfirmar: 'Remover',
       perigoso: true,
     })
@@ -75,17 +75,29 @@ function Dashboard() {
     if (pacienteSelecionado?.id === idParaRemover) setPacienteSelecionado(null)
   }
 
-  const atualizarPaciente = async (pacienteAtualizado) => {
-    const { id, ...dadosParaNuvem } = pacienteAtualizado
-
-    const { error } = await supabase.from('pacientes').update(dadosParaNuvem).eq('id', id)
+  /** Recebe só os campos que mudaram (ex.: { estado }). Devolve uma mensagem de erro ou null. */
+  const atualizarPaciente = async (alteracoes) => {
+    const id = pacienteSelecionado.id
+    const { error } = await supabase.from('pacientes').update(alteracoes).eq('id', id)
 
     if (error) {
       console.error('Erro ao atualizar paciente:', error)
-      return 'Não foi possível guardar as alterações. Tente novamente.'
+      return 'Não foi possível salvar as alterações. Tente novamente.'
     }
-    setPacientes((atuais) => atuais.map((p) => (p.id === id ? pacienteAtualizado : p)))
-    setPacienteSelecionado(pacienteAtualizado)
+    const atualizado = { ...pacienteSelecionado, ...alteracoes }
+    setPacientes((atuais) => atuais.map((p) => (p.id === id ? atualizado : p)))
+    setPacienteSelecionado(atualizado)
+    // O nome também fica guardado em cada agendamento: atualiza lá para a agenda não mostrar o nome antigo.
+    if (alteracoes.nome && alteracoes.nome !== pacienteSelecionado.nome) {
+      const { error: erroAgenda } = await supabase
+        .from('marcacoes')
+        .update({ nomePaciente: alteracoes.nome })
+        .eq('pacienteId', id)
+      if (erroAgenda) console.error('Erro ao atualizar o nome nos agendamentos:', erroAgenda)
+      setMarcacoes((atuais) =>
+        atuais.map((m) => (String(m.pacienteId) === String(id) ? { ...m, nomePaciente: alteracoes.nome } : m)),
+      )
+    }
     return null
   }
 
@@ -110,12 +122,12 @@ function Dashboard() {
       <div className="dashboard-header">
         <div>
           <h1 style={{ margin: 0, color: '#0f172a' }}>Pacientes</h1>
-          <p style={{ color: '#64748b', marginTop: '5px' }}>Gira os pacientes da clínica e acompanhe o estado dos tratamentos.</p>
+          <p style={{ color: '#64748b', marginTop: '5px' }}>Gerencie os pacientes da clínica e acompanhe o andamento dos tratamentos.</p>
         </div>
         
         <button className="btn-adicionar" onClick={() => setModalAberto(true)}>
           <UserPlus size={18} />
-          Adicionar Novo Paciente
+          Adicionar novo paciente
         </button>
       </div>
 
@@ -125,7 +137,7 @@ function Dashboard() {
           <Users color="#0284c7" size={28} />
         </div>
         <div>
-          <p className="stat-label">Total de Pacientes</p>
+          <p className="stat-label">Total de pacientes</p>
           <h2 className="stat-value">{totalPacientes}</h2>
         </div>
       </div>
@@ -135,7 +147,7 @@ function Dashboard() {
           <CalendarClock color="#0d9488" size={28} />
         </div>
         <div>
-          <p className="stat-label">Consultas Hoje</p>
+          <p className="stat-label">Consultas hoje</p>
           <h2 className="stat-value">{consultasDeHoje}</h2>
         </div>
       </div>
@@ -143,7 +155,7 @@ function Dashboard() {
 
       <div className="card">
         <div className="card-header">
-          <h3 style={{ margin: 0 }}>Pacientes recentes</h3>
+          <h3 style={{ margin: 0 }}>Lista de pacientes</h3>
           <div className="search-box">
             <Search color="#94a3b8" size={16} />
             <input 
@@ -157,14 +169,14 @@ function Dashboard() {
         </div>
 
         <MensagemErro mensagem={erroCarregamento} aoFechar={() => setErroCarregamento(null)} />
-        {carregando && <p className="estado-carregando">A carregar pacientes...</p>}
+        {carregando && <p className="estado-carregando">Carregando pacientes...</p>}
 
         <div className="table-wrapper">
   <table className="patients-table">
     <thead>
       <tr>
         <th>NOME</th><th>CONDIÇÃO</th><th>PRÓXIMA SESSÃO</th>
-        <th>CONTATO</th><th>ESTADO</th><th></th>
+        <th>TELEFONE</th><th>ESTADO</th><th></th>
       </tr>
     </thead>
     <tbody>
@@ -175,13 +187,13 @@ function Dashboard() {
               <div className="avatar">{paciente.iniciais}</div>
               <div>
                 <strong style={{ color: '#0f172a' }}>{paciente.nome}</strong>
-                <div style={{ fontSize: '12px', color: '#64748b' }}>{paciente.idade} anos</div>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>{descreverIdade(paciente, agora)}</div>
               </div>
             </div>
           </td>
           <td data-label="Condição">{paciente.condicao}</td>
           <td data-label="Próxima sessão"><strong>{obterProximaSessao(paciente.id)}</strong></td>
-          <td data-label="Contato">{paciente.contacto}</td>
+          <td data-label="Telefone">{paciente.contacto}</td>
           <td data-label="Estado"><span className={`badge ${classeBadgeEstado(paciente.estado)}`}>{paciente.estado}</span></td>
           <td>
             <div className="acoes">
@@ -200,7 +212,7 @@ function Dashboard() {
         <tr>
           <td colSpan="6" className="vazio">
             {pacientes.length === 0
-              ? 'Nenhum paciente registado. Clique em "Adicionar Novo Paciente" para começar.'
+              ? 'Nenhum paciente cadastrado. Clique em "Adicionar novo paciente" para começar.'
               : `Nenhum paciente corresponde a "${termoPesquisa}".`}
           </td>
         </tr>

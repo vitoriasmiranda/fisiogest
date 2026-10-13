@@ -12,7 +12,7 @@ beforeEach(() => Object.assign(supabase, criarSupabaseMock()))
 describe('<App />', () => {
   it('sem sessão mostra o login (sem piscar antes)', async () => {
     render(<App />)
-    expect(screen.getByText('A carregar...')).toBeInTheDocument()
+    expect(screen.getByText('Carregando...')).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: 'Entrar' })).toBeInTheDocument()
   })
 
@@ -55,7 +55,7 @@ describe('<App />', () => {
     await screen.findByRole('heading', { name: 'Pacientes', level: 1 })
 
     await user.click(screen.getByTitle('Sair'))
-    expect(screen.getByRole('alertdialog', { name: 'Terminar sessão?' })).toBeInTheDocument()
+    expect(screen.getByRole('alertdialog', { name: 'Sair do sistema?' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Sair' }))
 
     expect(supabase.auth.signOut).toHaveBeenCalled()

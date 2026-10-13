@@ -21,7 +21,7 @@ export default function Login() {
     })
 
     if (error) {
-      setErro('Email ou palavra-passe incorretos. Verifique e tente novamente.')
+      setErro('E-mail ou senha incorretos. Verifique e tente novamente.')
     }
     setLoading(false)
   }
@@ -32,13 +32,13 @@ export default function Login() {
         <div className="login-header">
           <Activity size={40} color="#0d9488" />
           <h1>FisioGest</h1>
-          <p>Faça login para aceder ao sistema</p>
+          <p>Faça login para acessar o sistema</p>
         </div>
 
         <form onSubmit={handleLogin} className="login-form">
           <MensagemErro mensagem={erro} />
           <div className="form-group">
-            <label htmlFor="login-email">Email</label>
+            <label htmlFor="login-email">E-mail</label>
             <input
               id="login-email"
               type="email"
@@ -50,7 +50,7 @@ export default function Login() {
           </div>
           
           <div className="form-group">
-            <label htmlFor="login-password">Palavra-passe</label>
+            <label htmlFor="login-password">Senha</label>
             <input
               id="login-password"
               type="password"
@@ -62,7 +62,7 @@ export default function Login() {
           </div>
 
           <button type="submit" className="btn-login" disabled={loading}>
-            {loading ? 'A verificar...' : 'Entrar'}
+            {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
       </div>

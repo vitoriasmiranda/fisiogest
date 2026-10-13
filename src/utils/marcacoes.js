@@ -62,12 +62,15 @@ export function descreverProximaSessao(marcacao, agora = new Date()) {
   return `${formatarDataCurta(marcacao.data)}, ${hora}`
 }
 
-/** Valida os dados de uma nova marcação. Devolve uma mensagem de erro ou null. */
-export function validarMarcacao({ pacienteId, data, hora, motivo }, agora = new Date()) {
-  if (!pacienteId) return 'Por favor, selecione um paciente.'
-  if (!data) return 'Indique a data da sessão.'
-  if (!hora) return 'Indique a hora da sessão.'
-  if (!motivo || !motivo.trim()) return 'Indique o motivo da sessão.'
-  if (data < formatarDataISO(agora)) return 'Não é possível agendar sessões no passado.'
+/**
+ * Valida os dados de uma marcação. Devolve uma mensagem de erro ou null.
+ * dataOriginal: ao editar uma sessão antiga, permite manter a data dela mesmo que já tenha passado.
+ */
+export function validarMarcacao({ pacienteId, data, hora, motivo }, agora = new Date(), dataOriginal = null) {
+  if (!pacienteId) return 'Selecione um paciente.'
+  if (!data) return 'Informe a data da sessão.'
+  if (!hora) return 'Informe o horário da sessão.'
+  if (!motivo || !motivo.trim()) return 'Informe o motivo da sessão.'
+  if (data < formatarDataISO(agora) && data !== dataOriginal) return 'Não é possível agendar sessões no passado.'
   return null
 }

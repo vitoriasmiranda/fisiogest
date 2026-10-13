@@ -8,6 +8,11 @@ export function criarSupabaseMock(inicial = {}) {
   const db = {
     pacientes: [...(inicial.pacientes ?? [])],
     marcacoes: [...(inicial.marcacoes ?? [])],
+    notas: [...(inicial.notas ?? [])],
+  }
+  // Valores padrão que o banco preenche sozinho (como os DEFAULT do SQL)
+  const padroes = {
+    notas: () => ({ criado_em: new Date().toISOString(), autor: inicial.emailUsuario ?? 'fisio@clinica.com' }),
   }
   // Erros forçados por tabela/operação, ex.: falhas.marcacoes = { insert: { message: 'x' } }
   const falhas = {}
@@ -25,7 +30,7 @@ export function criarSupabaseMock(inicial = {}) {
 
       switch (estado.op) {
         case 'insert': {
-          const novas = estado.payload.map((l) => ({ id: proximoId++, ...l }))
+          const novas = estado.payload.map((l) => ({ id: proximoId++, ...(padroes[tabela]?.() ?? {}), ...l }))
           linhas.push(...novas)
           return { data: novas, error: null }
         }

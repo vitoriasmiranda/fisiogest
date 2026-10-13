@@ -8,7 +8,7 @@ import './DialogoConfirmacao.css'
  * Normalmente não se usa diretamente: veja o hook useConfirmacao.
  *
  * Renderiza num portal no <body> para não ficar presa dentro de elementos com
- * `transform` (como a Sidebar em telemóvel), que estragariam o position: fixed.
+ * `transform` (como a Sidebar no celular), que estragariam o position: fixed.
  */
 function DialogoConfirmacao({
   titulo,

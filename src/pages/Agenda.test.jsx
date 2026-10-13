@@ -35,7 +35,7 @@ describe('<Agenda /> — vista de dia', () => {
     expect(screen.getByText('Reforço (às 09:30)')).toBeInTheDocument()
   })
 
-  it('mostra marcações fora do horário da grelha numa linha "Outros"', async () => {
+  it('mostra agendamentos fora do horário da grade numa linha "Outros"', async () => {
     render(<Agenda />)
     expect(await screen.findByText('Fora de horas (às 22:30)')).toBeInTheDocument()
     expect(screen.getByText('Outros')).toBeInTheDocument()
@@ -54,15 +54,15 @@ describe('<Agenda /> — vista de dia', () => {
     expect(screen.getByText('Avaliação (às 09:00)')).toBeInTheDocument()
   })
 
-  it('cancela uma marcação após confirmação na janela da app', async () => {
+  it('cancela um agendamento após confirmação na janela da app', async () => {
     const user = userEvent.setup()
     render(<Agenda />)
     await screen.findByText('Avaliação (às 09:00)')
 
-    await user.click(screen.getByRole('button', { name: 'Cancelar marcação de João Pereira às 09:00' }))
-    const dialogo = screen.getByRole('alertdialog', { name: 'Cancelar marcação?' })
+    await user.click(screen.getByRole('button', { name: 'Cancelar agendamento de João Pereira às 09:00' }))
+    const dialogo = screen.getByRole('alertdialog', { name: 'Cancelar agendamento?' })
     expect(dialogo).toHaveTextContent('A sessão de João Pereira às 09:00')
-    await user.click(within(dialogo).getByRole('button', { name: 'Cancelar marcação' }))
+    await user.click(within(dialogo).getByRole('button', { name: 'Cancelar agendamento' }))
 
     expect(screen.queryByText('Avaliação (às 09:00)')).not.toBeInTheDocument()
     expect(supabase.db.marcacoes.map((m) => m.id)).toEqual([2, 3, 4])
@@ -73,7 +73,7 @@ describe('<Agenda /> — vista de dia', () => {
     render(<Agenda />)
     await screen.findByText('Avaliação (às 09:00)')
 
-    await user.click(screen.getByRole('button', { name: 'Cancelar marcação de João Pereira às 09:00' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar agendamento de João Pereira às 09:00' }))
     await user.click(screen.getByRole('button', { name: 'Manter' }))
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
@@ -88,24 +88,24 @@ describe('<Agenda /> — vista de dia', () => {
     render(<Agenda />)
     await screen.findByText('Avaliação (às 09:00)')
 
-    await user.click(screen.getByRole('button', { name: 'Cancelar marcação de João Pereira às 09:00' }))
-    await user.click(screen.getByRole('button', { name: 'Cancelar marcação' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar agendamento de João Pereira às 09:00' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar agendamento' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Não foi possível cancelar/)
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Não foi possível cancelar o agendamento/)
     expect(screen.getByText('Avaliação (às 09:00)')).toBeInTheDocument()
   })
 })
 
 describe('<Agenda /> — nova marcação', () => {
   async function agendar(user, { data, hora, paciente = 'João Pereira', motivo = 'Nova sessão' }) {
-    await user.click(screen.getByRole('button', { name: /Nova Marcação/ }))
+    await user.click(screen.getByRole('button', { name: /Novo agendamento/ }))
     await user.selectOptions(await screen.findByLabelText('Paciente'), await screen.findByRole('option', { name: paciente }))
     const campoData = screen.getByLabelText('Data')
     await user.clear(campoData)
     await user.type(campoData, data)
-    await user.type(screen.getByLabelText('Hora'), hora)
-    await user.type(screen.getByLabelText('Motivo da Sessão'), motivo)
-    await user.click(screen.getByRole('button', { name: 'Agendar Sessão' }))
+    await user.type(screen.getByLabelText('Horário'), hora)
+    await user.type(screen.getByLabelText('Motivo da sessão'), motivo)
+    await user.click(screen.getByRole('button', { name: 'Agendar sessão' }))
   }
 
   it('bloqueia horário já ocupado, mesmo que o Supabase guarde "09:00:00"', async () => {
@@ -119,7 +119,7 @@ describe('<Agenda /> — nova marcação', () => {
     expect(supabase.db.marcacoes).toHaveLength(4)
   })
 
-  it('grava um horário livre, fecha o modal e mostra-o na grelha', async () => {
+  it('salva um horário livre, fecha o modal e mostra na grade', async () => {
     const user = userEvent.setup()
     render(<Agenda />)
     await screen.findByText('Avaliação (às 09:00)')
@@ -131,7 +131,7 @@ describe('<Agenda /> — nova marcação', () => {
     expect(supabase.db.marcacoes).toHaveLength(5)
   })
 
-  it('depois de gravar noutro dia, a agenda salta para esse dia', async () => {
+  it('depois de salvar em outro dia, a agenda vai para esse dia', async () => {
     const user = userEvent.setup()
     render(<Agenda />)
     await screen.findByText('Avaliação (às 09:00)')
@@ -142,7 +142,7 @@ describe('<Agenda /> — nova marcação', () => {
     expect(screen.getByTestId('titulo-dia')).toHaveTextContent(/16/)
   })
 
-  it('traduz a violação de UNIQUE do Supabase (corrida entre dois utilizadores)', async () => {
+  it('traduz a violação de UNIQUE do Supabase (duas pessoas agendando ao mesmo tempo)', async () => {
     const user = userEvent.setup()
     vi.spyOn(console, 'error').mockImplementation(() => {})
     supabase.falhas.marcacoes = { insert: { code: '23505', message: 'duplicate key' } }
@@ -151,7 +151,7 @@ describe('<Agenda /> — nova marcação', () => {
 
     await agendar(user, { data: '2026-10-13', hora: '16:00' })
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Outra pessoa acabou de marcar/)
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Outra pessoa acabou de agendar/)
   })
 })
 
@@ -162,10 +162,10 @@ describe('<Agenda /> — vista de mês', () => {
     await screen.findByText('Avaliação (às 09:00)')
 
     await user.click(screen.getByRole('button', { name: 'Mês' }))
-    expect(screen.getByRole('button', { name: 'Dia 14, com marcações' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Dia 14, com agendamentos' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Dia 15' })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Dia 14, com marcações' }))
+    await user.click(screen.getByRole('button', { name: 'Dia 14, com agendamentos' }))
     expect(screen.getByText('Amanhã (às 11:00)')).toBeInTheDocument()
   })
 
@@ -187,5 +187,75 @@ describe('<Agenda /> — vista de mês', () => {
     expect(screen.getByTestId('titulo-mes')).toHaveTextContent(/fevereiro/i)
     const dias = within(screen.getByTestId('titulo-mes').closest('.calendar-month-grid')).getAllByRole('button', { name: /^Dia \d+/ })
     expect(dias).toHaveLength(28)
+  })
+})
+
+describe('<Agenda /> — editar agendamento', () => {
+  it('abre o modal preenchido e salva a mudança de horário', async () => {
+    const user = userEvent.setup()
+    render(<Agenda />)
+    await screen.findByText('Avaliação (às 09:00)')
+
+    await user.click(screen.getByRole('button', { name: 'Editar agendamento de João Pereira às 09:00' }))
+    const modal = screen.getByRole('dialog', { name: 'Editar agendamento' })
+    await within(modal).findByRole('option', { name: 'João Pereira' })
+    expect(within(modal).getByLabelText('Horário')).toHaveValue('09:00')
+
+    const hora = within(modal).getByLabelText('Horário')
+    await user.clear(hora)
+    await user.type(hora, '15:00')
+    await user.click(within(modal).getByRole('button', { name: 'Salvar alterações' }))
+
+    expect(await screen.findByText('Avaliação (às 15:00)')).toBeInTheDocument()
+    expect(screen.queryByText('Avaliação (às 09:00)')).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(supabase.db.marcacoes).toHaveLength(4)
+    expect(supabase.db.marcacoes.find((m) => m.id === 1).hora).toBe('15:00')
+  })
+
+  it('salvar sem mudar o horário não acusa conflito consigo mesma', async () => {
+    const user = userEvent.setup()
+    render(<Agenda />)
+    await screen.findByText('Avaliação (às 09:00)')
+
+    await user.click(screen.getByRole('button', { name: 'Editar agendamento de João Pereira às 09:00' }))
+    const modal = screen.getByRole('dialog', { name: 'Editar agendamento' })
+    await within(modal).findByRole('option', { name: 'João Pereira' })
+    const motivo = within(modal).getByLabelText('Motivo da sessão')
+    await user.clear(motivo)
+    await user.type(motivo, 'Reavaliação')
+    await user.click(within(modal).getByRole('button', { name: 'Salvar alterações' }))
+
+    expect(await screen.findByText('Reavaliação (às 09:00)')).toBeInTheDocument()
+  })
+
+  it('não deixa mover para um horário de outro agendamento', async () => {
+    const user = userEvent.setup()
+    render(<Agenda />)
+    await screen.findByText('Avaliação (às 09:00)')
+
+    await user.click(screen.getByRole('button', { name: 'Editar agendamento de João Pereira às 09:00' }))
+    const modal = screen.getByRole('dialog', { name: 'Editar agendamento' })
+    await within(modal).findByRole('option', { name: 'João Pereira' })
+    const hora = within(modal).getByLabelText('Horário')
+    await user.clear(hora)
+    await user.type(hora, '09:30')
+    await user.click(within(modal).getByRole('button', { name: 'Salvar alterações' }))
+
+    expect(await within(modal).findByRole('alert')).toHaveTextContent(/Horário indisponível/)
+    expect(supabase.db.marcacoes.find((m) => m.id === 1).hora).toBe('09:00:00')
+  })
+
+  it('depois de editar, "Novo agendamento" abre o formulário vazio', async () => {
+    const user = userEvent.setup()
+    render(<Agenda />)
+    await screen.findByText('Avaliação (às 09:00)')
+
+    await user.click(screen.getByRole('button', { name: 'Editar agendamento de João Pereira às 09:00' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await user.click(screen.getByRole('button', { name: /Novo agendamento/ }))
+
+    expect(screen.getByRole('dialog', { name: 'Novo agendamento' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Motivo da sessão')).toHaveValue('')
   })
 })

@@ -17,8 +17,8 @@ function Sidebar({ paginaAtual, setPaginaAtual, recolhido, setRecolhido, aberta 
 
   const terminarSessao = async () => {
     const ok = await confirmar({
-      titulo: 'Terminar sessão?',
-      mensagem: 'Vai precisar de iniciar sessão novamente para aceder ao FisioGest.',
+      titulo: 'Sair do sistema?',
+      mensagem: 'Você vai precisar fazer login novamente para acessar o FisioGest.',
       textoConfirmar: 'Sair',
     })
     if (ok) await supabase.auth.signOut()

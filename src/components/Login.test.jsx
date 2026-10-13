@@ -16,7 +16,7 @@ async function entrar(user) {
 }
 
 describe('<Login />', () => {
-  it('envia email e palavra-passe para o Supabase', async () => {
+  it('envia e-mail e senha para o Supabase', async () => {
     const user = userEvent.setup()
     render(<Login />)
     await entrar(user)
@@ -31,7 +31,7 @@ describe('<Login />', () => {
 
     await entrar(user)
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/incorretos/)
+    expect(await screen.findByRole('alert')).toHaveTextContent(/E-mail ou senha incorretos/)
     expect(alerta).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Entrar' })).toBeEnabled()
   })
@@ -44,7 +44,7 @@ describe('<Login />', () => {
 
     await entrar(user)
 
-    expect(screen.getByRole('button', { name: 'A verificar...' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Entrando...' })).toBeDisabled()
     terminar({ error: null })
     expect(await screen.findByRole('button', { name: 'Entrar' })).toBeEnabled()
   })
