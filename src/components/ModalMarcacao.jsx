@@ -46,7 +46,6 @@ function ModalMarcacao({ aoFechar, aoGuardar }) {
     }
 
     aoGuardar(novaMarcacao)
-    aoFechar()
   }
 
   return (
@@ -83,8 +82,10 @@ function ModalMarcacao({ aoFechar, aoGuardar }) {
                 value={data} 
                 onChange={(e) => setData(e.target.value)}
                 required
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontFamily: 'inherit' }}
               />
             </div>
+            
             <div className="form-group" style={{ flex: 1 }}>
               <label>Hora</label>
               <input 
@@ -92,6 +93,7 @@ function ModalMarcacao({ aoFechar, aoGuardar }) {
                 value={hora} 
                 onChange={(e) => setHora(e.target.value)}
                 required
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontFamily: 'inherit' }}
               />
             </div>
           </div>
@@ -104,6 +106,7 @@ function ModalMarcacao({ aoFechar, aoGuardar }) {
               value={motivo} 
               onChange={(e) => setMotivo(e.target.value)}
               required
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
             />
           </div>
 
