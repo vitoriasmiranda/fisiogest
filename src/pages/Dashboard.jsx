@@ -1,153 +1,92 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../supabase' 
-import { UserPlus, Search, Trash2, Eye, Users, CalendarClock } from 'lucide-react' 
+import { supabase } from '../supabase'
+import { UserPlus, Search, Trash2, Eye, Users, CalendarClock } from 'lucide-react'
 import ModalPaciente from '../components/ModalPaciente'
 import DetalhesPaciente from '../components/DetalhesPaciente'
+import { formatarDataISO } from '../utils/datas'
+import { contarMarcacoesNaData, descreverProximaSessao, obterProximaMarcacao } from '../utils/marcacoes'
+import { classeBadgeEstado, filtrarPacientes } from '../utils/pacientes'
 import './Dashboard.css'
 
 function Dashboard() {
   const [modalAberto, setModalAberto] = useState(false)
   const [termoPesquisa, setTermoPesquisa] = useState('')
   const [pacienteSelecionado, setPacienteSelecionado] = useState(null)
-  
-  const [marcacoes, setMarcacoes] = useState([])
-
-  
   const [pacientes, setPacientes] = useState([])
+  const [marcacoes, setMarcacoes] = useState([])
+  const [carregando, setCarregando] = useState(true)
+  const [erroCarregamento, setErroCarregamento] = useState(null)
+  const [agora] = useState(() => new Date())
 
-  const carregarPacientes = async () => {
-    const { data, error } = await supabase
-      .from('pacientes')
-      .select('*')
-      .order('id', { ascending: false })
-    
-    if (error) {
-      console.error("Erro a buscar pacientes:", error)
-    } else if (data) {
-      setPacientes(data)
-    }
-  }
-
+  // Um único carregamento ao montar (antes havia dois useEffect e os pacientes eram buscados duas vezes).
   useEffect(() => {
-    carregarPacientes()
-  }, [])
-
-  const carregarMarcacoes = async () => {
-    const { data, error } = await supabase
-      .from('marcacoes')
-      .select('*')
-    if (data) {
-      setMarcacoes(data)
+    let ativo = true
+    const carregar = async () => {
+      const [resPacientes, resMarcacoes] = await Promise.all([
+        supabase.from('pacientes').select('*').order('id', { ascending: false }),
+        supabase.from('marcacoes').select('*'),
+      ])
+      if (!ativo) return
+      if (resPacientes.error || resMarcacoes.error) {
+        console.error('Erro ao carregar dados:', resPacientes.error || resMarcacoes.error)
+        setErroCarregamento('Não foi possível carregar os dados. Verifique a ligação e tente novamente.')
+      }
+      setPacientes(resPacientes.data ?? [])
+      setMarcacoes(resMarcacoes.data ?? [])
+      setCarregando(false)
     }
-  }
-
-  useEffect(() => {
-    carregarPacientes()
-    carregarMarcacoes()
+    carregar()
+    return () => { ativo = false }
   }, [])
 
   const adicionarNovoPaciente = async (novoPaciente) => {
-    
-    const { id, proximaSessao, ...dadosParaNuvem } = novoPaciente;
-
-    const { data, error } = await supabase
-      .from('pacientes')
-      .insert([dadosParaNuvem])
-      .select(); 
+    const { data, error } = await supabase.from('pacientes').insert([novoPaciente]).select()
 
     if (error) {
-      console.error("Erro ao guardar paciente:", error);
-      alert("Houve um erro ao guardar na nuvem!");
-    } else if (data) {
-     
-      setPacientes([data[0], ...pacientes]);
+      console.error('Erro ao guardar paciente:', error)
+      alert('Houve um erro ao guardar na nuvem!')
+      return false
     }
+    setPacientes((atuais) => [data[0], ...atuais])
+    return true
   }
 
   const removerPaciente = async (idParaRemover) => {
-    const confirmar = window.confirm("Tem a certeza que deseja remover este paciente?");
-    if (confirmar) {
-      const { error } = await supabase
-        .from('pacientes')
-        .delete()
-        .eq('id', idParaRemover);
+    const confirmar = window.confirm('Tem a certeza que deseja remover este paciente?')
+    if (!confirmar) return
 
-      if (error) {
-        console.error("Erro ao remover:", error);
-        alert("Houve um erro ao apagar na nuvem!");
-      } else {
-        const listaAtualizada = pacientes.filter(paciente => paciente.id !== idParaRemover);
-        setPacientes(listaAtualizada);
-        
-        if (pacienteSelecionado && pacienteSelecionado.id === idParaRemover) {
-          setPacienteSelecionado(null);
-        }
-      }
-    }
-  }
-  
-  const atualizarPaciente = async (pacienteAtualizado) => {
-    const { id, ...dadosParaNuvem } = pacienteAtualizado;
-    
-    const { error } = await supabase
-      .from('pacientes')
-      .update(dadosParaNuvem)
-      .eq('id', id);
+    const { error } = await supabase.from('pacientes').delete().eq('id', idParaRemover)
 
     if (error) {
-      console.error("Erro ao atualizar paciente:", error);
-      alert("Houve um erro ao guardar as alterações na nuvem!");
-    } else {
-      const novaLista = pacientes.map(p => p.id === id ? pacienteAtualizado : p);
-      setPacientes(novaLista);
-      setPacienteSelecionado(pacienteAtualizado);
+      console.error('Erro ao remover:', error)
+      alert('Houve um erro ao apagar na nuvem!')
+      return
     }
+    setPacientes((atuais) => atuais.filter((p) => p.id !== idParaRemover))
+    setMarcacoes((atuais) => atuais.filter((m) => String(m.pacienteId) !== String(idParaRemover)))
+    if (pacienteSelecionado?.id === idParaRemover) setPacienteSelecionado(null)
   }
 
-  const pacientesFiltrados = pacientes.filter((paciente) => {
-    const termo = termoPesquisa.toLowerCase()
-    return (
-      paciente.nome.toLowerCase().includes(termo) || 
-      paciente.condicao.toLowerCase().includes(termo)
-    )
-  })
+  const atualizarPaciente = async (pacienteAtualizado) => {
+    const { id, ...dadosParaNuvem } = pacienteAtualizado
 
-  const totalPacientes = pacientes.length;
+    const { error } = await supabase.from('pacientes').update(dadosParaNuvem).eq('id', id)
 
-  const dataDeHoje = new Date()
-  const ano = dataDeHoje.getFullYear()
-  const mes = String(dataDeHoje.getMonth() + 1).padStart(2, '0')
-  const dia = String(dataDeHoje.getDate()).padStart(2, '0')
-  const dataHojeFormatada = `${ano}-${mes}-${dia}`
-  
-  const consultasDeHoje = marcacoes.filter(m => m.data === dataHojeFormatada).length;
-
-  const obterProximaSessao = (pacienteId) => {
-    const hoje = new Date()
-    hoje.setHours(0, 0, 0, 0)
-
-    const consultasFuturas = marcacoes.filter(m => {
-      if (m.pacienteId.toString() !== pacienteId.toString()) return false
-      
-      const [anoMarcacao, mesMarcacao, diaMarcacao] = m.data.split('-')
-      const dataConsulta = new Date(anoMarcacao, mesMarcacao - 1, diaMarcacao)
-      return dataConsulta >= hoje
-    })
-
-    if (consultasFuturas.length === 0) return "Por agendar"
-
-    consultasFuturas.sort((a, b) => new Date(a.data) - new Date(b.data))
-    const proxima = consultasFuturas[0]
-
-    const [anoProxima, mesProxima, diaProxima] = proxima.data.split('-')
-    const dataProximaConsulta = new Date(anoProxima, mesProxima - 1, diaProxima)
-    
-    if (dataProximaConsulta.getTime() === hoje.getTime()) {
-      return `Hoje, ${proxima.hora}`
+    if (error) {
+      console.error('Erro ao atualizar paciente:', error)
+      alert('Houve um erro ao guardar as alterações na nuvem!')
+      return false
     }
-
-    return `${dataProximaConsulta.toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })}, ${proxima.hora}`
+    setPacientes((atuais) => atuais.map((p) => (p.id === id ? pacienteAtualizado : p)))
+    setPacienteSelecionado(pacienteAtualizado)
+    return true
   }
+
+  const pacientesFiltrados = filtrarPacientes(pacientes, termoPesquisa)
+  const totalPacientes = pacientes.length
+  const consultasDeHoje = contarMarcacoesNaData(marcacoes, formatarDataISO(agora))
+  const obterProximaSessao = (pacienteId) =>
+    descreverProximaSessao(obterProximaMarcacao(marcacoes, pacienteId, agora), agora)
 
   if (pacienteSelecionado) {
     return (
@@ -201,13 +140,17 @@ function Dashboard() {
           <div className="search-box">
             <Search color="#94a3b8" size={16} />
             <input 
-              type="text" 
+              type="search"
+              aria-label="Pesquisar paciente"
               placeholder="Pesquisar paciente..." 
               value={termoPesquisa}
               onChange={(e) => setTermoPesquisa(e.target.value)}
             />
           </div>
         </div>
+
+        {erroCarregamento && <p role="alert" className="estado-carregando">{erroCarregamento}</p>}
+        {carregando && <p className="estado-carregando">A carregar pacientes...</p>}
 
         <div className="table-wrapper">
   <table className="patients-table">
@@ -232,13 +175,13 @@ function Dashboard() {
           <td data-label="Condição">{paciente.condicao}</td>
           <td data-label="Próxima sessão"><strong>{obterProximaSessao(paciente.id)}</strong></td>
           <td data-label="Contato">{paciente.contacto}</td>
-          <td data-label="Estado"><span className="badge badge-green">{paciente.estado}</span></td>
+          <td data-label="Estado"><span className={`badge ${classeBadgeEstado(paciente.estado)}`}>{paciente.estado}</span></td>
           <td>
             <div className="acoes">
-              <button className="btn-acao" onClick={() => setPacienteSelecionado(paciente)} title="Ver ficha">
+              <button className="btn-acao" onClick={() => setPacienteSelecionado(paciente)} title="Ver ficha" aria-label={`Ver ficha de ${paciente.nome}`}>
                 <Eye size={18} />
               </button>
-              <button className="btn-remover" onClick={() => removerPaciente(paciente.id)} title="Remover paciente">
+              <button className="btn-remover" onClick={() => removerPaciente(paciente.id)} title="Remover paciente" aria-label={`Remover ${paciente.nome}`}>
                 <Trash2 size={18} />
               </button>
             </div>
@@ -246,10 +189,12 @@ function Dashboard() {
         </tr>
       ))}
 
-      {pacientesFiltrados.length === 0 && (
+      {!carregando && pacientesFiltrados.length === 0 && (
         <tr>
           <td colSpan="6" className="vazio">
-            Nenhum paciente encontrado. Clique em "Adicionar Novo Paciente" para começar.
+            {pacientes.length === 0
+              ? 'Nenhum paciente registado. Clique em "Adicionar Novo Paciente" para começar.'
+              : `Nenhum paciente corresponde a "${termoPesquisa}".`}
           </td>
         </tr>
       )}
