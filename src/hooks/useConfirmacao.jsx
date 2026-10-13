@@ -1,20 +1,7 @@
 import { useCallback, useState } from 'react'
 import DialogoConfirmacao from '../components/DialogoConfirmacao'
 
-/**
- * Substituto do window.confirm que usa a janela da app.
- *
- * Uso:
- *   const [dialogo, confirmar] = useConfirmacao()
- *
- *   const apagar = async () => {
- *     const ok = await confirmar({ titulo: 'Apagar?', textoConfirmar: 'Apagar', perigoso: true })
- *     if (!ok) return
- *     ...
- *   }
- *
- *   return <>... {dialogo}</>
- */
+
 export function useConfirmacao() {
   const [pedido, setPedido] = useState(null)
 

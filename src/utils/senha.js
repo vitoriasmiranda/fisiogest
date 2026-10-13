@@ -1,6 +1,5 @@
 export const TAMANHO_MINIMO_SENHA = 8
 
-/** Valida a nova senha. Devolve uma mensagem de erro ou null. */
 export function validarNovaSenha(senha, confirmacao) {
   if (!senha) return 'Digite a nova senha.'
   if (senha.length < TAMANHO_MINIMO_SENHA) return `A senha precisa ter pelo menos ${TAMANHO_MINIMO_SENHA} caracteres.`
@@ -9,7 +8,6 @@ export function validarNovaSenha(senha, confirmacao) {
   return null
 }
 
-/** Traduz os erros do Supabase Auth mais comuns ao trocar a senha. */
 export function mensagemErroSenha(error) {
   const codigo = error?.code ?? ''
   const texto = error?.message ?? ''

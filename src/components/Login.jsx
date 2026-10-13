@@ -64,8 +64,7 @@ export default function Login() {
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
 
-          {/* Os logins são criados pela administradora. Quem esquecer a senha recebe
-              uma provisória dela (pelo Supabase) e troca depois em "Minha conta". */}
+          {}
           <p className="aviso-senha">Esqueceu a senha? Fale com a Vitória.</p>
         </form>
       </div>

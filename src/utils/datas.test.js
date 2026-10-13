@@ -37,7 +37,7 @@ describe('parseDataISO', () => {
 describe('normalizarHora', () => {
   it.each([
     ['09:00', '09:00'],
-    ['09:00:00', '09:00'], // formato devolvido pelo Supabase para colunas time
+    ['09:00:00', '09:00'], 
     ['9:5', '09:05'],
     ['', ''],
     [null, ''],
@@ -67,7 +67,7 @@ describe('formatarDataHoraNota', () => {
   })
 
   it('aceita o texto ISO que o Supabase devolve (convertido para o horário local)', () => {
-    // 12:30 UTC = 09:30 em São Paulo (os testes rodam com TZ=America/Sao_Paulo)
+
     expect(formatarDataHoraNota('2026-10-13T12:30:00+00:00')).toBe('13 OUT 2026, 09:30')
   })
 

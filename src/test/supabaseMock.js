@@ -1,6 +1,3 @@
-// Mock do cliente Supabase com uma "base de dados" em memória.
-// Suporta o subconjunto usado na app: from().select().order().eq().insert().update().delete()
-// e auth.getSession / onAuthStateChange / signInWithPassword / signOut.
 
 import { vi } from 'vitest'
 
@@ -10,11 +7,10 @@ export function criarSupabaseMock(inicial = {}) {
     marcacoes: [...(inicial.marcacoes ?? [])],
     notas: [...(inicial.notas ?? [])],
   }
-  // Valores padrão que o banco preenche sozinho (como os DEFAULT do SQL)
   const padroes = {
     notas: () => ({ criado_em: new Date().toISOString(), autor: inicial.emailUsuario ?? 'fisio@clinica.com' }),
   }
-  // Erros forçados por tabela/operação, ex.: falhas.marcacoes = { insert: { message: 'x' } }
+
   const falhas = {}
   let proximoId = 1000
 
@@ -63,7 +59,7 @@ export function criarSupabaseMock(inicial = {}) {
     }
 
     const builder = {
-      select: () => builder, // depois de insert() mantém a operação
+      select: () => builder, 
       order: (coluna, { ascending = true } = {}) => { estado.ordem = { coluna, ascending }; return builder },
       eq: (col, val) => { estado.filtros.push([col, val]); return builder },
       gte: (col, val) => { estado.filtros.push([col, val, 'gte']); return builder },
@@ -86,7 +82,7 @@ export function criarSupabaseMock(inicial = {}) {
     signInWithPassword: vi.fn(async () => ({ data: {}, error: null })),
     resetPasswordForEmail: vi.fn(async () => ({ data: {}, error: null })),
     updateUser: vi.fn(async () => ({ data: {}, error: null })),
-    /** Simula um evento do Supabase Auth (ex.: 'PASSWORD_RECOVERY'). */
+
     emitir: (evento, sessao = auth.sessao) => ouvinteAuth?.(evento, sessao),
     signOut: vi.fn(async () => {
       auth.sessao = null

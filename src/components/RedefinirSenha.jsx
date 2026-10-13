@@ -2,7 +2,6 @@ import { Activity } from 'lucide-react'
 import FormNovaSenha from './FormNovaSenha'
 import './Login.css'
 
-/** Tela mostrada quando a pessoa chega pelo link de "Esqueci minha senha". */
 function RedefinirSenha({ aoConcluir }) {
   return (
     <div className="login-container">

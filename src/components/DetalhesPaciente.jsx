@@ -8,10 +8,7 @@ import { descreverProximaSessao, obterProximaMarcacao } from '../utils/marcacoes
 import { descreverIdade, ESTADOS, LIMITE_NOTA } from '../utils/pacientes'
 import './DetalhesPaciente.css'
 
-/**
- * Ficha do paciente.
- * aoAtualizar(alteracoes) recebe só os campos que mudaram e devolve uma mensagem de erro ou null.
- */
+
 function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
   const [textoNota, setTextoNota] = useState('')
   const [proximaSessao, setProximaSessao] = useState('Calculando...')
@@ -65,13 +62,11 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
     if (texto === '') return
 
     setSalvandoNota(true)
-    // Cada nota é uma linha própria: duas pessoas salvando ao mesmo tempo não apagam a nota uma da outra.
     const { data, error } = await supabase.from('notas').insert([{ paciente_id: paciente.id, texto }]).select()
     setSalvandoNota(false)
 
     if (error) {
       console.error('Erro ao salvar nota:', error)
-      // Mantém o texto digitado para poder tentar de novo.
       setErro('Não foi possível salvar a nota. Tente novamente.')
       return
     }

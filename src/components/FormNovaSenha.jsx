@@ -5,7 +5,6 @@ import { mensagemErroSenha, TAMANHO_MINIMO_SENHA, validarNovaSenha } from '../ut
 import './Login.css'
 import './FormNovaSenha.css'
 
-/** Formulário de nova senha. Usado em "Minha conta" e ao voltar do link de "Esqueci minha senha". */
 function FormNovaSenha({ textoBotao = 'Salvar nova senha', aoConcluir }) {
   const [senha, setSenha] = useState('')
   const [confirmacao, setConfirmacao] = useState('')

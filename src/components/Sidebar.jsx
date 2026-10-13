@@ -29,7 +29,7 @@ function Sidebar({ paginaAtual, setPaginaAtual, recolhido, setRecolhido, aberta 
   return (
     <aside className={`sidebar ${compacto ? 'recolhida' : ''} ${aberta ? 'aberta' : ''}`} style={{ display: 'flex', flexDirection: 'column' }}>
       
-      {/* Logótipo */}
+      {}
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
@@ -41,9 +41,9 @@ function Sidebar({ paginaAtual, setPaginaAtual, recolhido, setRecolhido, aberta 
         {!compacto && <h2 style={{ color: 'white', margin: 0, fontSize: '22px', fontWeight: '600' }}>FisioGest</h2>}
       </div>
       
-      {/* Menu Principal */}
+      {}
       <nav style={{ flex: 1, padding: '0 12px' }}>
-        {/* A adicão de height: '100%' aqui é o que permite empurrar itens para o fundo */}
+        {}
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', height: '100%' }}>
           
           <li 
@@ -91,7 +91,7 @@ function Sidebar({ paginaAtual, setPaginaAtual, recolhido, setRecolhido, aberta 
             {!compacto && <span style={{ color: paginaAtual === 'conta' ? 'white' : '#cbd5e1', fontSize: '15px', fontWeight: paginaAtual === 'conta' ? '500' : '400' }}>Minha conta</span>}
           </li>
 
-          {/* Botão Sair - Agora ancorado ao fundo com marginTop: 'auto' */}
+          {}
           <li 
             onClick={terminarSessao}
             title="Sair"
@@ -101,7 +101,7 @@ function Sidebar({ paginaAtual, setPaginaAtual, recolhido, setRecolhido, aberta 
               color: '#ef4444', 
               justifyContent: compacto ? 'center' : 'flex-start',
               transition: 'all 0.2s',
-              marginTop: mobile ? '0' : 'auto', /* Empurra o botão até ao fundo no PC */
+              marginTop: mobile ? '0' : 'auto', 
               marginBottom: mobile ? '0' : '8px'
             }}
           >
@@ -112,7 +112,7 @@ function Sidebar({ paginaAtual, setPaginaAtual, recolhido, setRecolhido, aberta 
         </ul>
       </nav>
 
-      {/* Botão de Recolher o Menu */}
+      {}
       {!mobile && (
         <div style={{ padding: '0 12px 24px 12px' }}>
           <div style={{ borderTop: '1px solid #1e293b', paddingTop: '16px' }}>

@@ -3,13 +3,6 @@ import { createPortal } from 'react-dom'
 import { AlertTriangle } from 'lucide-react'
 import './DialogoConfirmacao.css'
 
-/**
- * Janela de confirmação no visual da app (substitui o window.confirm do navegador).
- * Normalmente não se usa diretamente: veja o hook useConfirmacao.
- *
- * Renderiza num portal no <body> para não ficar presa dentro de elementos com
- * `transform` (como a Sidebar no celular), que estragariam o position: fixed.
- */
 function DialogoConfirmacao({
   titulo,
   mensagem,
@@ -22,7 +15,7 @@ function DialogoConfirmacao({
   const botaoCancelarRef = useRef(null)
 
   useEffect(() => {
-    // Foco no "Cancelar": um Enter distraído nunca apaga nada.
+
     botaoCancelarRef.current?.focus()
     const aoPremirTecla = (e) => {
       if (e.key === 'Escape') aoCancelar()

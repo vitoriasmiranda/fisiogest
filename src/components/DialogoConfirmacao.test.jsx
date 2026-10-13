@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { useConfirmacao } from '../hooks/useConfirmacao'
 
-// Pequeno componente de teste que usa o hook como as páginas usam
 function Exemplo({ aoResponder }) {
   const [dialogo, confirmar] = useConfirmacao()
   const perguntar = async () => {

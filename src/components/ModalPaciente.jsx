@@ -13,12 +13,6 @@ import './ModalPaciente.css'
 
 const estiloErro = { color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }
 
-/**
- * Cadastro e edição de paciente.
- * - Sem `paciente`: cadastro novo (aoGuardar recebe os dados com estado "Em avaliação").
- * - Com `paciente`: edição (aoGuardar recebe só os campos do formulário; id e estado não mudam).
- * aoGuardar deve devolver uma mensagem de erro (string) ou null em caso de sucesso.
- */
 function ModalPaciente({ aoFechar, aoGuardar, paciente = null }) {
   const editando = Boolean(paciente)
   const [form, setForm] = useState(() => formularioDoPaciente(paciente))
@@ -42,7 +36,7 @@ function ModalPaciente({ aoFechar, aoGuardar, paciente = null }) {
     setErroGuardar(null)
     const erro = await aoGuardar(editando ? dadosDoFormulario(form) : criarPaciente(form))
     setAGuardar(false)
-    // Só fecha quando o Supabase confirmou — se falhar, os dados digitados não se perdem.
+  
     if (erro) setErroGuardar(erro)
     else aoFechar()
   }

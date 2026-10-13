@@ -14,13 +14,13 @@ import {
   validarPaciente,
 } from './pacientes'
 
-const HOJE = new Date(2026, 9, 13) // 13/10/2026
+const HOJE = new Date(2026, 9, 13) 
 
 describe('gerarIniciais', () => {
   it.each([
     ['Maria da Silva', 'MS'],
     ['joão pedro', 'JP'],
-    ['  Ana   Costa  ', 'AC'], // espaços extras
+    ['  Ana   Costa  ', 'AC'], 
     ['Ana', 'AN'],
     ['', '?'],
     [null, '?'],

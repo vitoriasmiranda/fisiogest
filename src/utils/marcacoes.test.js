@@ -11,7 +11,7 @@ import {
   validarMarcacao,
 } from './marcacoes'
 
-const AGORA = new Date(2026, 9, 13, 10, 0) // terça, 13 out 2026, 10:00
+const AGORA = new Date(2026, 9, 13, 10, 0) 
 
 const marcacoes = [
   { id: 1, pacienteId: 7, data: '2026-10-13', hora: '09:00:00', motivo: 'Avaliação' },

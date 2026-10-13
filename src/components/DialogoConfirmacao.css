@@ -87,7 +87,6 @@
   outline-offset: 2px;
 }
 
-/* Aviso de erro dentro da página (substitui o alert) */
 .mensagem-erro {
   display: flex;
   align-items: flex-start;

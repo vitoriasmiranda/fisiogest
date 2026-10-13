@@ -98,7 +98,6 @@ function Agenda() {
     setMarcacaoEditando(null)
   }
 
-  /** Cria ou atualiza. Devolve uma mensagem de erro para o modal, ou null se deu certo. */
   const guardarMarcacao = async (dados) => {
     const idEditando = marcacaoEditando?.id ?? null
     if (existeConflito(marcacoes, dados, idEditando)) {
@@ -112,7 +111,7 @@ function Agenda() {
 
     if (error) {
       console.error('Erro ao salvar agendamento:', error)
-      // 23505 = unique_violation da restrição UNIQUE(data, hora) no Supabase
+     
       if (error.code === '23505') return 'Horário indisponível! Outra pessoa acabou de agendar este horário.'
       return 'Não foi possível salvar o agendamento. Tente novamente.'
     }

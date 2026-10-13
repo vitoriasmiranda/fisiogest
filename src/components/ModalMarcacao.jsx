@@ -8,12 +8,6 @@ import './ModalMarcacao.css'
 
 const estiloCampo = { width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontFamily: 'inherit' }
 
-/**
- * Agendar ou editar uma sessão.
- * - Sem `marcacao`: nova sessão (dataInicial pré-preenche o dia aberto na agenda).
- * - Com `marcacao`: edição — os campos já vêm preenchidos.
- * aoGuardar(dados) deve devolver uma mensagem de erro (string) ou null em caso de sucesso.
- */
 function ModalMarcacao({ aoFechar, aoGuardar, dataInicial = '', marcacao = null }) {
   const editando = Boolean(marcacao)
   const [pacienteId, setPacienteId] = useState(marcacao ? String(marcacao.pacienteId) : '')
@@ -34,7 +28,7 @@ function ModalMarcacao({ aoFechar, aoGuardar, dataInicial = '', marcacao = null 
         console.error('Erro ao carregar pacientes no modal:', error)
         setErro('Não foi possível carregar a lista de pacientes.')
       } else {
-        // Arquivados não aparecem — exceto o paciente do agendamento que está sendo editado.
+      
         const idAtual = marcacao ? String(marcacao.pacienteId) : null
         setPacientes((data ?? []).filter((p) => !p.arquivado || String(p.id) === idAtual))
       }
@@ -70,7 +64,6 @@ function ModalMarcacao({ aoFechar, aoGuardar, dataInicial = '', marcacao = null 
     if (erroGuardar) setErro(erroGuardar)
   }
 
-  // Ao editar uma sessão que já passou, o mínimo do calendário é a data dela.
   const dataMinima = marcacao && marcacao.data < hoje ? marcacao.data : hoje
 
   return (

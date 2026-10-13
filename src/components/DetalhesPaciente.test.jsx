@@ -132,7 +132,7 @@ describe('<DetalhesPaciente /> — notas de evolução (tabela própria)', () =>
     const novas = supabase.db.notas.filter((n) => n.paciente_id === 7)
     expect(novas).toHaveLength(2)
     expect(novas[1]).toMatchObject({ paciente_id: 7, texto: 'Boa evolução' })
-    // não reescreve a ficha do paciente (era isso que fazia uma nota apagar a outra)
+    
     expect(aoAtualizar).not.toHaveBeenCalled()
 
     const itens = screen.getAllByText(/OUT 2026/)
