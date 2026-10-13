@@ -4,11 +4,18 @@ import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Agenda from './pages/Agenda'
 import Login from './components/Login'
+import RedefinirSenha from './components/RedefinirSenha'
+import MinhaConta from './pages/MinhaConta'
 
 function App() {
   const [session, setSession] = useState(null)
   // Enquanto o Supabase verifica a sessão salva, não mostramos o login (evita a tela "piscar").
   const [aVerificarSessao, setAVerificarSessao] = useState(true)
+  // true quando a pessoa chegou pelo link de "Esqueci minha senha"
+  // (o endereço do link traz "type=recovery"; o evento PASSWORD_RECOVERY confirma)
+  const [redefinindoSenha, setRedefinindoSenha] = useState(() =>
+    /type=recovery/.test(`${window.location.hash}${window.location.search}`),
+  )
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -16,8 +23,9 @@ function App() {
       setAVerificarSessao(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((evento, session) => {
       setSession(session)
+      if (evento === 'PASSWORD_RECOVERY') setRedefinindoSenha(true)
     })
 
     return () => subscription.unsubscribe()
@@ -35,6 +43,10 @@ function App() {
 
   if (aVerificarSessao) {
     return <div className="a-carregar" aria-busy="true" style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>Carregando...</div>
+  }
+
+  if (redefinindoSenha && session) {
+    return <RedefinirSenha aoConcluir={() => setRedefinindoSenha(false)} />
   }
 
   if (!session) {
@@ -59,7 +71,9 @@ function App() {
       />
 
       <main className={`app-main ${recolhido ? 'recolhido' : ''}`}>
-        {paginaAtual === 'pacientes' ? <Dashboard /> : <Agenda />}
+        {paginaAtual === 'pacientes' && <Dashboard />}
+        {paginaAtual === 'agenda' && <Agenda />}
+        {paginaAtual === 'conta' && <MinhaConta email={session.user?.email} />}
       </main>
     </div>
   )

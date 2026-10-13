@@ -114,33 +114,77 @@ describe('<Dashboard />', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 
-  it('remove um paciente após confirmação na janela da app', async () => {
+  it('arquiva um paciente: sai da lista, continua no banco e perde só os agendamentos futuros', async () => {
     const user = userEvent.setup()
+    supabase.db.marcacoes.push({ id: 13, pacienteId: 1, nomePaciente: 'João Pereira', data: '2026-10-01', hora: '10:00', motivo: 'Antiga' })
     render(<Dashboard />)
     await screen.findByText('João Pereira')
 
-    await user.click(screen.getByRole('button', { name: 'Remover João Pereira' }))
-    const dialogo = screen.getByRole('alertdialog', { name: 'Remover João Pereira?' })
-    expect(dialogo).toHaveTextContent(/não pode ser desfeita/)
-    await user.click(within(dialogo).getByRole('button', { name: 'Remover' }))
+    await user.click(screen.getByRole('button', { name: 'Arquivar João Pereira' }))
+    const dialogo = screen.getByRole('alertdialog', { name: 'Arquivar João Pereira?' })
+    expect(dialogo).toHaveTextContent(/continuam guardadas/)
+    await user.click(within(dialogo).getByRole('button', { name: 'Arquivar' }))
 
     expect(screen.queryByText('João Pereira')).not.toBeInTheDocument()
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
-    expect(supabase.db.pacientes.map((p) => p.id)).toEqual([2])
-    // as consultas dele deixam de contar para "Consultas Hoje"
+    // continua no banco, só marcado como arquivado
+    expect(supabase.db.pacientes.find((p) => p.id === 1)).toMatchObject({ arquivado: true })
+    // agendamento de hoje (futuro) cancelado; o de 01/10 (passado) fica no histórico
+    expect(supabase.db.marcacoes.map((m) => m.id).sort()).toEqual([11, 12, 13])
+    expect(screen.getByText('Total de pacientes').nextElementSibling).toHaveTextContent('1')
     expect(screen.getByText('Consultas hoje').nextElementSibling).toHaveTextContent('1')
   })
 
-  it('não remove se a pessoa cancelar', async () => {
+  it('não arquiva se a pessoa cancelar', async () => {
     const user = userEvent.setup()
     render(<Dashboard />)
     await screen.findByText('João Pereira')
 
-    await user.click(screen.getByRole('button', { name: 'Remover João Pereira' }))
+    await user.click(screen.getByRole('button', { name: 'Arquivar João Pereira' }))
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))
 
     expect(screen.getByText('João Pereira')).toBeInTheDocument()
-    expect(supabase.db.pacientes).toHaveLength(2)
+    expect(supabase.db.pacientes.find((p) => p.id === 1).arquivado).toBeUndefined()
+  })
+
+  it('mostra erro na página se não conseguir arquivar', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    supabase.falhas.pacientes = { update: { message: 'falhou' } }
+    render(<Dashboard />)
+    await screen.findByText('João Pereira')
+
+    await user.click(screen.getByRole('button', { name: 'Arquivar João Pereira' }))
+    await user.click(screen.getByRole('button', { name: 'Arquivar' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Não foi possível arquivar/)
+    expect(screen.getByText('João Pereira')).toBeInTheDocument()
+  })
+
+  it('"Ver arquivados" lista os arquivados e permite reativar', async () => {
+    const user = userEvent.setup()
+    supabase.db.pacientes.push({ id: 3, nome: 'Carla Dias', iniciais: 'CD', idade: '50', condicao: 'Tendinite', contacto: '933333333', estado: 'Alta médica', arquivado: true })
+    render(<Dashboard />)
+    await screen.findByText('João Pereira')
+    expect(screen.queryByText('Carla Dias')).not.toBeInTheDocument()
+    expect(screen.getByText('Total de pacientes').nextElementSibling).toHaveTextContent('2')
+
+    await user.click(screen.getByRole('button', { name: 'Ver arquivados (1)' }))
+    expect(screen.getByRole('heading', { name: 'Pacientes arquivados' })).toBeInTheDocument()
+    expect(screen.getByText('Carla Dias')).toBeInTheDocument()
+    expect(screen.queryByText('João Pereira')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Reativar Carla Dias' }))
+    expect(supabase.db.pacientes.find((p) => p.id === 3).arquivado).toBe(false)
+    expect(screen.getByText('Nenhum paciente arquivado.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Voltar para ativos/ }))
+    expect(screen.getByText('Carla Dias')).toBeInTheDocument()
+  })
+
+  it('sem arquivados, o botão "Ver arquivados" não aparece', async () => {
+    render(<Dashboard />)
+    await screen.findByText('João Pereira')
+    expect(screen.queryByRole('button', { name: /Ver arquivados/ })).not.toBeInTheDocument()
   })
 
   it('abre a ficha, muda o estado e volta à lista', async () => {
@@ -156,20 +200,6 @@ describe('<Dashboard />', () => {
 
     await user.click(screen.getByRole('button', { name: /Voltar para pacientes/ }))
     expect(within(linhaDe('Maria Silva')).getByText('Em pausa')).toHaveClass('badge-amber')
-  })
-
-  it('mostra erro na página se a remoção falhar', async () => {
-    const user = userEvent.setup()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    supabase.falhas.pacientes = { delete: { message: 'falhou' } }
-    render(<Dashboard />)
-    await screen.findByText('João Pereira')
-
-    await user.click(screen.getByRole('button', { name: 'Remover João Pereira' }))
-    await user.click(screen.getByRole('button', { name: 'Remover' }))
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Não foi possível remover/)
-    expect(screen.getByText('João Pereira')).toBeInTheDocument()
   })
 
   it('mostra a idade calculada (data de nascimento) e a idade antiga de quem ainda não tem', async () => {

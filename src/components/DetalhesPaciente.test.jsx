@@ -191,3 +191,23 @@ describe('<DetalhesPaciente /> — notas de evolução (tabela própria)', () =>
     await screen.findByText('Primeira sessão')
   })
 })
+
+describe('<DetalhesPaciente /> — arquivado', () => {
+  it('mostra o aviso e permite reativar', async () => {
+    const user = userEvent.setup()
+    const aoAtualizar = vi.fn().mockResolvedValue(null)
+    renderizar({ paciente: { ...paciente, arquivado: true }, aoAtualizar })
+    await screen.findByText('Primeira sessão')
+
+    expect(screen.getByText(/Este paciente está arquivado/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Reativar' }))
+
+    expect(aoAtualizar).toHaveBeenCalledWith({ arquivado: false })
+  })
+
+  it('paciente ativo não mostra o aviso', async () => {
+    renderizar()
+    await screen.findByText('Primeira sessão')
+    expect(screen.queryByText(/Este paciente está arquivado/)).not.toBeInTheDocument()
+  })
+})

@@ -176,3 +176,24 @@
   }
   .patients-table td.vazio { display: block; text-align: center; }
 }
+.lista-titulo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-ver-arquivados {
+  background: transparent;
+  border: none;
+  color: #0d9488;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.btn-ver-arquivados:hover {
+  text-decoration: underline;
+}

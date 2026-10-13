@@ -1,0 +1,62 @@
+.form-nova-senha {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-nova-senha .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-nova-senha label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #334155;
+}
+
+.form-nova-senha input {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.form-nova-senha input:focus {
+  outline: 2px solid #0d9488;
+  outline-offset: 1px;
+}
+
+.form-nova-senha .helper-text {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.mensagem-sucesso {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+.link-texto {
+  background: none;
+  border: none;
+  color: #0d9488;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 16px;
+  align-self: center;
+}
+
+.link-texto:hover {
+  text-decoration: underline;
+}

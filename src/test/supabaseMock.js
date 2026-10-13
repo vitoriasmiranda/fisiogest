@@ -25,7 +25,10 @@ export function criarSupabaseMock(inicial = {}) {
       const erro = falhas[tabela]?.[estado.op]
       if (erro) return { data: null, error: erro }
 
-      const corresponde = (linha) => estado.filtros.every(([col, val]) => String(linha[col]) === String(val))
+      const corresponde = (linha) =>
+        estado.filtros.every(([col, val, op = 'eq']) =>
+          op === 'gte' ? String(linha[col]) >= String(val) : String(linha[col]) === String(val),
+        )
       const linhas = db[tabela] ?? (db[tabela] = [])
 
       switch (estado.op) {
@@ -63,6 +66,7 @@ export function criarSupabaseMock(inicial = {}) {
       select: () => builder, // depois de insert() mantém a operação
       order: (coluna, { ascending = true } = {}) => { estado.ordem = { coluna, ascending }; return builder },
       eq: (col, val) => { estado.filtros.push([col, val]); return builder },
+      gte: (col, val) => { estado.filtros.push([col, val, 'gte']); return builder },
       insert: (linhas) => { estado.op = 'insert'; estado.payload = linhas; return builder },
       update: (dados) => { estado.op = 'update'; estado.payload = dados; return builder },
       delete: () => { estado.op = 'delete'; return builder },
@@ -80,6 +84,10 @@ export function criarSupabaseMock(inicial = {}) {
       return { data: { subscription: { unsubscribe: vi.fn() } } }
     }),
     signInWithPassword: vi.fn(async () => ({ data: {}, error: null })),
+    resetPasswordForEmail: vi.fn(async () => ({ data: {}, error: null })),
+    updateUser: vi.fn(async () => ({ data: {}, error: null })),
+    /** Simula um evento do Supabase Auth (ex.: 'PASSWORD_RECOVERY'). */
+    emitir: (evento, sessao = auth.sessao) => ouvinteAuth?.(evento, sessao),
     signOut: vi.fn(async () => {
       auth.sessao = null
       ouvinteAuth?.('SIGNED_OUT', null)

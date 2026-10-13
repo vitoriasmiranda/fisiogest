@@ -152,3 +152,20 @@ describe('<ModalMarcacao /> — edição', () => {
     expect(aoGuardar).toHaveBeenCalled()
   })
 })
+
+describe('<ModalMarcacao /> — pacientes arquivados', () => {
+  it('não aparecem para novos agendamentos', async () => {
+    supabase.db.pacientes.push({ id: 3, nome: 'Carla Dias', arquivado: true })
+    render(<ModalMarcacao aoFechar={vi.fn()} aoGuardar={vi.fn()} />)
+    await screen.findByRole('option', { name: 'Ana Costa' })
+    expect(screen.queryByRole('option', { name: 'Carla Dias' })).not.toBeInTheDocument()
+  })
+
+  it('aparecem ao editar um agendamento antigo desse paciente', async () => {
+    supabase.db.pacientes.push({ id: 3, nome: 'Carla Dias', arquivado: true })
+    const antiga = { id: 9, pacienteId: 3, nomePaciente: 'Carla Dias', data: '2026-10-01', hora: '10:00', motivo: 'Alta' }
+    render(<ModalMarcacao marcacao={antiga} aoFechar={vi.fn()} aoGuardar={vi.fn()} />)
+    expect(await screen.findByRole('option', { name: 'Carla Dias' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Paciente')).toHaveValue('3')
+  })
+})

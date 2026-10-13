@@ -28,18 +28,20 @@ function ModalMarcacao({ aoFechar, aoGuardar, dataInicial = '', marcacao = null 
   useEffect(() => {
     let ativo = true
     const carregarPacientes = async () => {
-      const { data, error } = await supabase.from('pacientes').select('id, nome').order('nome')
+      const { data, error } = await supabase.from('pacientes').select('id, nome, arquivado').order('nome')
       if (!ativo) return
       if (error) {
         console.error('Erro ao carregar pacientes no modal:', error)
         setErro('Não foi possível carregar a lista de pacientes.')
       } else {
-        setPacientes(data ?? [])
+        // Arquivados não aparecem — exceto o paciente do agendamento que está sendo editado.
+        const idAtual = marcacao ? String(marcacao.pacienteId) : null
+        setPacientes((data ?? []).filter((p) => !p.arquivado || String(p.id) === idAtual))
       }
     }
     carregarPacientes()
     return () => { ativo = false }
-  }, [])
+  }, [marcacao])
 
   const submeterFormulario = async (e) => {
     e.preventDefault()

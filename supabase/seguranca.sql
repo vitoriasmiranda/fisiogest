@@ -1,15 +1,20 @@
 -- Configuração de segurança do banco do FisioGest (já aplicada).
 -- Serve como registro; não é preciso rodar de novo.
+-- O histórico completo está em migracao-v2.sql (notas) e migracao-v3.sql (dados por profissional).
 
--- RLS ligado em pacientes e marcacoes, com a política
--- "Permitir tudo para utilizadores com login" (role authenticated).
--- Cadastro público de usuários desligado em Authentication > Sign In / Providers.
+-- Acesso
+--   * Cadastro público desligado (Authentication > Sign In / Providers).
+--   * Os logins são criados pela administradora em Authentication > Users.
 
--- Impede duas consultas no mesmo dia e hora
-alter table public.marcacoes
-  add constraint marcacoes_data_hora_unica unique (data, hora);
+-- Cada profissional só enxerga o que é dele (RLS)
+--   * pacientes: ver / cadastrar / editar onde profissional_id = auth.uid()
+--                sem regra de DELETE: pacientes são arquivados, nunca apagados
+--   * marcacoes: tudo, só na própria agenda e só com os próprios pacientes
+--   * notas:     ver / escrever nas fichas dos próprios pacientes
+--                sem UPDATE/DELETE: o que foi registrado não é alterado
 
--- Ao apagar um paciente, apaga também as consultas dele
-alter table public.marcacoes
-  add constraint marcacoes_paciente_fk
-  foreign key ("pacienteId") references public.pacientes(id) on delete cascade;
+-- Regras de integridade
+--   * marcacoes: unique (profissional_id, data, hora) — sem dois atendimentos
+--     no mesmo horário NA MESMA agenda; profissionais diferentes podem coincidir
+--   * marcacoes."pacienteId" -> pacientes(id) on delete cascade
+--   * notas.paciente_id      -> pacientes(id) on delete cascade

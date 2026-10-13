@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Activity, Users, Calendar, PanelLeftClose, PanelLeftOpen, LogOut } from 'lucide-react'
+import { Activity, Users, Calendar, UserCircle, PanelLeftClose, PanelLeftOpen, LogOut } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useConfirmacao } from '../hooks/useConfirmacao'
 import './Sidebar.css'
@@ -74,6 +74,21 @@ function Sidebar({ paginaAtual, setPaginaAtual, recolhido, setRecolhido, aberta 
           >
             <Calendar size={22} style={{ minWidth: '22px', color: paginaAtual === 'agenda' ? '#2dd4bf' : '#94a3b8' }} />
             {!compacto && <span style={{ color: paginaAtual === 'agenda' ? 'white' : '#cbd5e1', fontSize: '15px', fontWeight: paginaAtual === 'agenda' ? '500' : '400' }}>Agenda</span>}
+          </li>
+
+          <li 
+            onClick={() => setPaginaAtual('conta')}
+            title="Minha conta"
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '14px', 
+              padding: '14px', cursor: 'pointer', borderRadius: '10px',
+              backgroundColor: paginaAtual === 'conta' ? '#1e293b' : 'transparent',
+              justifyContent: compacto ? 'center' : 'flex-start',
+              transition: 'all 0.2s'
+            }}
+          >
+            <UserCircle size={22} style={{ minWidth: '22px', color: paginaAtual === 'conta' ? '#2dd4bf' : '#94a3b8' }} />
+            {!compacto && <span style={{ color: paginaAtual === 'conta' ? 'white' : '#cbd5e1', fontSize: '15px', fontWeight: paginaAtual === 'conta' ? '500' : '400' }}>Minha conta</span>}
           </li>
 
           {/* Botão Sair - Agora ancorado ao fundo com marginTop: 'auto' */}

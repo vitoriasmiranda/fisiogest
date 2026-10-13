@@ -97,6 +97,13 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
 
       <MensagemErro mensagem={erro} aoFechar={() => setErro(null)} />
 
+      {paciente.arquivado && (
+        <div className="aviso-arquivado" role="status">
+          <span>Este paciente está arquivado e não aparece na lista nem na agenda.</span>
+          <button onClick={async () => setErro((await aoAtualizar({ arquivado: false })) ?? null)}>Reativar</button>
+        </div>
+      )}
+
       <div className="detalhes-header">
         <div className="detalhes-header-left">
           <div className="avatar large">{paciente.iniciais}</div>

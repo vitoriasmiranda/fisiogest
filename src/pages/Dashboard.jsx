@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
-import { UserPlus, Search, Trash2, Eye, Users, CalendarClock } from 'lucide-react'
+import { UserPlus, Search, Archive, ArchiveRestore, Eye, Users, CalendarClock } from 'lucide-react'
 import ModalPaciente from '../components/ModalPaciente'
 import DetalhesPaciente from '../components/DetalhesPaciente'
 import MensagemErro from '../components/MensagemErro'
@@ -18,6 +18,7 @@ function Dashboard() {
   const [marcacoes, setMarcacoes] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [erroCarregamento, setErroCarregamento] = useState(null)
+  const [verArquivados, setVerArquivados] = useState(false)
   const [agora] = useState(() => new Date())
   const [dialogo, confirmar] = useConfirmacao()
 
@@ -53,26 +54,49 @@ function Dashboard() {
     return null
   }
 
-  const removerPaciente = async (idParaRemover) => {
-    const paciente = pacientes.find((p) => p.id === idParaRemover)
+  /**
+   * Arquivar em vez de apagar: o prontuário precisa ficar guardado (e o banco não deixa apagar pacientes).
+   * Os agendamentos FUTUROS são cancelados; os passados ficam no histórico.
+   */
+  const arquivarPaciente = async (id) => {
+    const paciente = pacientes.find((p) => p.id === id)
     const ok = await confirmar({
-      titulo: `Remover ${paciente?.nome ?? 'paciente'}?`,
-      mensagem: 'A ficha, as notas de evolução e os agendamentos deste paciente serão apagados. Esta ação não pode ser desfeita.',
-      textoConfirmar: 'Remover',
-      perigoso: true,
+      titulo: `Arquivar ${paciente?.nome ?? 'paciente'}?`,
+      mensagem:
+        'O paciente sai da lista e os agendamentos futuros dele são cancelados. A ficha e as notas continuam guardadas, e você pode reativá-lo quando quiser.',
+      textoConfirmar: 'Arquivar',
     })
     if (!ok) return
 
-    const { error } = await supabase.from('pacientes').delete().eq('id', idParaRemover)
-
+    const { error } = await supabase.from('pacientes').update({ arquivado: true }).eq('id', id)
     if (error) {
-      console.error('Erro ao remover:', error)
-      setErroCarregamento('Não foi possível remover o paciente. Tente novamente.')
+      console.error('Erro ao arquivar:', error)
+      setErroCarregamento('Não foi possível arquivar o paciente. Tente novamente.')
       return
     }
-    setPacientes((atuais) => atuais.filter((p) => p.id !== idParaRemover))
-    setMarcacoes((atuais) => atuais.filter((m) => String(m.pacienteId) !== String(idParaRemover)))
-    if (pacienteSelecionado?.id === idParaRemover) setPacienteSelecionado(null)
+
+    const hojeISO = formatarDataISO(agora)
+    const { error: erroAgenda } = await supabase
+      .from('marcacoes')
+      .delete()
+      .eq('pacienteId', id)
+      .gte('data', hojeISO)
+    if (erroAgenda) console.error('Erro ao cancelar agendamentos futuros:', erroAgenda)
+
+    setErroCarregamento(null)
+    setPacientes((atuais) => atuais.map((p) => (p.id === id ? { ...p, arquivado: true } : p)))
+    setMarcacoes((atuais) => atuais.filter((m) => !(String(m.pacienteId) === String(id) && m.data >= hojeISO)))
+  }
+
+  const reativarPaciente = async (id) => {
+    const { error } = await supabase.from('pacientes').update({ arquivado: false }).eq('id', id)
+    if (error) {
+      console.error('Erro ao reativar:', error)
+      setErroCarregamento('Não foi possível reativar o paciente. Tente novamente.')
+      return
+    }
+    setErroCarregamento(null)
+    setPacientes((atuais) => atuais.map((p) => (p.id === id ? { ...p, arquivado: false } : p)))
   }
 
   /** Recebe só os campos que mudaram (ex.: { estado }). Devolve uma mensagem de erro ou null. */
@@ -101,8 +125,10 @@ function Dashboard() {
     return null
   }
 
-  const pacientesFiltrados = filtrarPacientes(pacientes, termoPesquisa)
-  const totalPacientes = pacientes.length
+  const ativos = pacientes.filter((p) => !p.arquivado)
+  const arquivados = pacientes.filter((p) => p.arquivado)
+  const pacientesFiltrados = filtrarPacientes(verArquivados ? arquivados : ativos, termoPesquisa)
+  const totalPacientes = ativos.length
   const consultasDeHoje = contarMarcacoesNaData(marcacoes, formatarDataISO(agora))
   const obterProximaSessao = (pacienteId) =>
     descreverProximaSessao(obterProximaMarcacao(marcacoes, pacienteId, agora), agora)
@@ -155,7 +181,14 @@ function Dashboard() {
 
       <div className="card">
         <div className="card-header">
-          <h3 style={{ margin: 0 }}>Lista de pacientes</h3>
+          <div className="lista-titulo">
+            <h3 style={{ margin: 0 }}>{verArquivados ? 'Pacientes arquivados' : 'Lista de pacientes'}</h3>
+            {(verArquivados || arquivados.length > 0) && (
+              <button className="btn-ver-arquivados" onClick={() => setVerArquivados((v) => !v)} aria-pressed={verArquivados}>
+                {verArquivados ? '← Voltar para ativos' : `Ver arquivados (${arquivados.length})`}
+              </button>
+            )}
+          </div>
           <div className="search-box">
             <Search color="#94a3b8" size={16} />
             <input 
@@ -200,9 +233,15 @@ function Dashboard() {
               <button className="btn-acao" onClick={() => setPacienteSelecionado(paciente)} title="Ver ficha" aria-label={`Ver ficha de ${paciente.nome}`}>
                 <Eye size={18} />
               </button>
-              <button className="btn-remover" onClick={() => removerPaciente(paciente.id)} title="Remover paciente" aria-label={`Remover ${paciente.nome}`}>
-                <Trash2 size={18} />
-              </button>
+              {paciente.arquivado ? (
+                <button className="btn-acao" onClick={() => reativarPaciente(paciente.id)} title="Reativar paciente" aria-label={`Reativar ${paciente.nome}`}>
+                  <ArchiveRestore size={18} />
+                </button>
+              ) : (
+                <button className="btn-remover" onClick={() => arquivarPaciente(paciente.id)} title="Arquivar paciente" aria-label={`Arquivar ${paciente.nome}`}>
+                  <Archive size={18} />
+                </button>
+              )}
             </div>
           </td>
         </tr>
@@ -211,9 +250,11 @@ function Dashboard() {
       {!carregando && pacientesFiltrados.length === 0 && (
         <tr>
           <td colSpan="6" className="vazio">
-            {pacientes.length === 0
-              ? 'Nenhum paciente cadastrado. Clique em "Adicionar novo paciente" para começar.'
-              : `Nenhum paciente corresponde a "${termoPesquisa}".`}
+            {termoPesquisa.trim()
+              ? `Nenhum paciente corresponde a "${termoPesquisa}".`
+              : verArquivados
+                ? 'Nenhum paciente arquivado.'
+                : 'Nenhum paciente cadastrado. Clique em "Adicionar novo paciente" para começar.'}
           </td>
         </tr>
       )}
