@@ -23,15 +23,16 @@ describe('<Login />', () => {
     expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({ email: 'fisio@clinica.pt', password: 'segredo123' })
   })
 
-  it('mostra aviso quando as credenciais estão erradas', async () => {
+  it('mostra aviso na página (não um alert) quando as credenciais estão erradas', async () => {
     const user = userEvent.setup()
-    const alerta = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    const alerta = vi.spyOn(window, 'alert')
     supabase.auth.signInWithPassword.mockResolvedValue({ error: { message: 'Invalid login' } })
     render(<Login />)
 
     await entrar(user)
 
-    expect(alerta).toHaveBeenCalledWith(expect.stringMatching(/Erro ao iniciar sessão/))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/incorretos/)
+    expect(alerta).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Entrar' })).toBeEnabled()
   })
 

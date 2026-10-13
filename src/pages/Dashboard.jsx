@@ -3,6 +3,8 @@ import { supabase } from '../supabase'
 import { UserPlus, Search, Trash2, Eye, Users, CalendarClock } from 'lucide-react'
 import ModalPaciente from '../components/ModalPaciente'
 import DetalhesPaciente from '../components/DetalhesPaciente'
+import MensagemErro from '../components/MensagemErro'
+import { useConfirmacao } from '../hooks/useConfirmacao'
 import { formatarDataISO } from '../utils/datas'
 import { contarMarcacoesNaData, descreverProximaSessao, obterProximaMarcacao } from '../utils/marcacoes'
 import { classeBadgeEstado, filtrarPacientes } from '../utils/pacientes'
@@ -17,6 +19,7 @@ function Dashboard() {
   const [carregando, setCarregando] = useState(true)
   const [erroCarregamento, setErroCarregamento] = useState(null)
   const [agora] = useState(() => new Date())
+  const [dialogo, confirmar] = useConfirmacao()
 
   // Um único carregamento ao montar (antes havia dois useEffect e os pacientes eram buscados duas vezes).
   useEffect(() => {
@@ -44,22 +47,27 @@ function Dashboard() {
 
     if (error) {
       console.error('Erro ao guardar paciente:', error)
-      alert('Houve um erro ao guardar na nuvem!')
-      return false
+      return 'Não foi possível guardar o paciente. Tente novamente.'
     }
     setPacientes((atuais) => [data[0], ...atuais])
-    return true
+    return null
   }
 
   const removerPaciente = async (idParaRemover) => {
-    const confirmar = window.confirm('Tem a certeza que deseja remover este paciente?')
-    if (!confirmar) return
+    const paciente = pacientes.find((p) => p.id === idParaRemover)
+    const ok = await confirmar({
+      titulo: `Remover ${paciente?.nome ?? 'paciente'}?`,
+      mensagem: 'A ficha, as notas de evolução e as marcações deste paciente serão apagadas. Esta ação não pode ser desfeita.',
+      textoConfirmar: 'Remover',
+      perigoso: true,
+    })
+    if (!ok) return
 
     const { error } = await supabase.from('pacientes').delete().eq('id', idParaRemover)
 
     if (error) {
       console.error('Erro ao remover:', error)
-      alert('Houve um erro ao apagar na nuvem!')
+      setErroCarregamento('Não foi possível remover o paciente. Tente novamente.')
       return
     }
     setPacientes((atuais) => atuais.filter((p) => p.id !== idParaRemover))
@@ -74,12 +82,11 @@ function Dashboard() {
 
     if (error) {
       console.error('Erro ao atualizar paciente:', error)
-      alert('Houve um erro ao guardar as alterações na nuvem!')
-      return false
+      return 'Não foi possível guardar as alterações. Tente novamente.'
     }
     setPacientes((atuais) => atuais.map((p) => (p.id === id ? pacienteAtualizado : p)))
     setPacienteSelecionado(pacienteAtualizado)
-    return true
+    return null
   }
 
   const pacientesFiltrados = filtrarPacientes(pacientes, termoPesquisa)
@@ -149,7 +156,7 @@ function Dashboard() {
           </div>
         </div>
 
-        {erroCarregamento && <p role="alert" className="estado-carregando">{erroCarregamento}</p>}
+        <MensagemErro mensagem={erroCarregamento} aoFechar={() => setErroCarregamento(null)} />
         {carregando && <p className="estado-carregando">A carregar pacientes...</p>}
 
         <div className="table-wrapper">
@@ -203,6 +210,7 @@ function Dashboard() {
 </div>
       </div>
       
+      {dialogo}
       {modalAberto && <ModalPaciente aoFechar={() => setModalAberto(false)} aoGuardar={adicionarNovoPaciente} />}
       
     </div>

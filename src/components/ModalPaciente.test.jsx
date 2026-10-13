@@ -27,7 +27,7 @@ describe('<ModalPaciente />', () => {
 
   it('guarda um paciente válido com os dados limpos e fecha', async () => {
     const user = userEvent.setup()
-    const aoGuardar = vi.fn().mockResolvedValue(true)
+    const aoGuardar = vi.fn().mockResolvedValue(null)
     const aoFechar = vi.fn()
     render(<ModalPaciente aoFechar={aoFechar} aoGuardar={aoGuardar} />)
 
@@ -49,7 +49,7 @@ describe('<ModalPaciente />', () => {
 
   it('submete com Enter (o formulário agora tem onSubmit)', async () => {
     const user = userEvent.setup()
-    const aoGuardar = vi.fn().mockResolvedValue(true)
+    const aoGuardar = vi.fn().mockResolvedValue(null)
     render(<ModalPaciente aoFechar={vi.fn()} aoGuardar={aoGuardar} />)
 
     await preencher(user, { condicao: 'Entorse{Enter}' })
@@ -57,15 +57,16 @@ describe('<ModalPaciente />', () => {
     expect(aoGuardar).toHaveBeenCalledTimes(1)
   })
 
-  it('NÃO fecha se a gravação falhar (os dados escritos não se perdem)', async () => {
+  it('NÃO fecha se a gravação falhar e mostra o erro dentro do modal', async () => {
     const user = userEvent.setup()
     const aoFechar = vi.fn()
-    render(<ModalPaciente aoFechar={aoFechar} aoGuardar={vi.fn().mockResolvedValue(false)} />)
+    render(<ModalPaciente aoFechar={aoFechar} aoGuardar={vi.fn().mockResolvedValue('Sem ligação')} />)
 
     await preencher(user)
     await user.click(screen.getByRole('button', { name: /Guardar paciente/ }))
 
     expect(aoFechar).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent('Sem ligação')
     expect(screen.getByLabelText(/Nome/)).toHaveValue('Maria da Silva')
   })
 

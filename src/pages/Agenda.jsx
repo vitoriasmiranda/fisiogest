@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import ModalMarcacao from '../components/ModalMarcacao'
+import MensagemErro from '../components/MensagemErro'
+import { useConfirmacao } from '../hooks/useConfirmacao'
 import {
   deslocamentoInicioMes,
   diasNoMes,
@@ -51,13 +53,18 @@ function Agenda() {
   const [dataAtual, setDataAtual] = useState(() => new Date())
   const [hoje] = useState(() => new Date())
   const [marcacoes, setMarcacoes] = useState([])
+  const [erro, setErro] = useState(null)
+  const [dialogo, confirmar] = useConfirmacao()
 
   useEffect(() => {
     let ativo = true
     const carregarMarcacoes = async () => {
       const { data, error } = await supabase.from('marcacoes').select('*')
       if (!ativo) return
-      if (error) console.error('Erro a buscar marcações:', error)
+      if (error) {
+        console.error('Erro a buscar marcações:', error)
+        setErro('Não foi possível carregar as marcações. Verifique a ligação.')
+      }
       else setMarcacoes(data ?? [])
     }
     carregarMarcacoes()
@@ -85,16 +92,26 @@ function Agenda() {
   }
 
   const removerMarcacao = async (idParaRemover) => {
-    const confirmar = window.confirm('Tem a certeza que deseja cancelar esta marcação?')
-    if (!confirmar) return
+    const marcacao = marcacoes.find((m) => m.id === idParaRemover)
+    const ok = await confirmar({
+      titulo: 'Cancelar marcação?',
+      mensagem: marcacao
+        ? `A sessão de ${marcacao.nomePaciente} às ${normalizarHora(marcacao.hora)} vai ser removida da agenda.`
+        : 'Esta marcação vai ser removida da agenda.',
+      textoConfirmar: 'Cancelar marcação',
+      textoCancelar: 'Manter',
+      perigoso: true,
+    })
+    if (!ok) return
 
     const { error } = await supabase.from('marcacoes').delete().eq('id', idParaRemover)
 
     if (error) {
       console.error('Erro ao remover:', error)
-      alert('Houve um erro ao apagar na nuvem!')
+      setErro('Não foi possível cancelar a marcação. Tente novamente.')
       return
     }
+    setErro(null)
     setMarcacoes((atuais) => atuais.filter((m) => m.id !== idParaRemover))
   }
 
@@ -127,6 +144,8 @@ function Agenda() {
           </button>
         </div>
       </div>
+
+      <MensagemErro mensagem={erro} aoFechar={() => setErro(null)} />
 
       {vista === 'dia' ? (
         <div className="agenda-grid">
@@ -216,6 +235,7 @@ function Agenda() {
         />
       )}
 
+      {dialogo}
     </div>
   )
 }

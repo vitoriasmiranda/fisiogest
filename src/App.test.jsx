@@ -35,14 +35,28 @@ describe('<App />', () => {
     expect(await screen.findByRole('heading', { name: 'Pacientes', level: 1 })).toBeInTheDocument()
   })
 
-  it('terminar sessão volta ao login', async () => {
+  it('cancelar a saída mantém a sessão', async () => {
     const user = userEvent.setup()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     supabase.auth.sessao = { user: { id: 'u1' } }
     render(<App />)
     await screen.findByRole('heading', { name: 'Pacientes', level: 1 })
 
     await user.click(screen.getByTitle('Sair'))
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+    expect(supabase.auth.signOut).not.toHaveBeenCalled()
+    expect(screen.getByRole('heading', { name: 'Pacientes', level: 1 })).toBeInTheDocument()
+  })
+
+  it('terminar sessão volta ao login', async () => {
+    const user = userEvent.setup()
+    supabase.auth.sessao = { user: { id: 'u1' } }
+    render(<App />)
+    await screen.findByRole('heading', { name: 'Pacientes', level: 1 })
+
+    await user.click(screen.getByTitle('Sair'))
+    expect(screen.getByRole('alertdialog', { name: 'Terminar sessão?' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Sair' }))
 
     expect(supabase.auth.signOut).toHaveBeenCalled()
     expect(await screen.findByRole('button', { name: 'Entrar' })).toBeInTheDocument()

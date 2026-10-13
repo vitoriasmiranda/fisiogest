@@ -99,7 +99,6 @@ describe('<Dashboard />', () => {
   it('mantém o modal aberto se a gravação falhar', async () => {
     const user = userEvent.setup()
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.spyOn(window, 'alert').mockImplementation(() => {})
     supabase.falhas.pacientes = { insert: { message: 'falhou' } }
     render(<Dashboard />)
     await screen.findByText('João Pereira')
@@ -111,19 +110,22 @@ describe('<Dashboard />', () => {
     await user.type(screen.getByLabelText(/Motivo da consulta/), 'Tendinite')
     await user.click(screen.getByRole('button', { name: /Guardar paciente/ }))
 
-    expect(window.alert).toHaveBeenCalled()
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Não foi possível guardar o paciente/)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 
-  it('remove um paciente após confirmação', async () => {
+  it('remove um paciente após confirmação na janela da app', async () => {
     const user = userEvent.setup()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(<Dashboard />)
     await screen.findByText('João Pereira')
 
     await user.click(screen.getByRole('button', { name: 'Remover João Pereira' }))
+    const dialogo = screen.getByRole('alertdialog', { name: 'Remover João Pereira?' })
+    expect(dialogo).toHaveTextContent(/não pode ser desfeita/)
+    await user.click(within(dialogo).getByRole('button', { name: 'Remover' }))
 
     expect(screen.queryByText('João Pereira')).not.toBeInTheDocument()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(supabase.db.pacientes.map((p) => p.id)).toEqual([2])
     // as consultas dele deixam de contar para "Consultas Hoje"
     expect(screen.getByText('Consultas Hoje').nextElementSibling).toHaveTextContent('1')
@@ -131,11 +133,11 @@ describe('<Dashboard />', () => {
 
   it('não remove se o utilizador cancelar', async () => {
     const user = userEvent.setup()
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
     render(<Dashboard />)
     await screen.findByText('João Pereira')
 
     await user.click(screen.getByRole('button', { name: 'Remover João Pereira' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
 
     expect(screen.getByText('João Pereira')).toBeInTheDocument()
     expect(supabase.db.pacientes).toHaveLength(2)
@@ -154,6 +156,20 @@ describe('<Dashboard />', () => {
 
     await user.click(screen.getByRole('button', { name: /Voltar aos pacientes/ }))
     expect(within(linhaDe('Maria Silva')).getByText('Em pausa')).toHaveClass('badge-amber')
+  })
+
+  it('mostra erro na página se a remoção falhar', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    supabase.falhas.pacientes = { delete: { message: 'falhou' } }
+    render(<Dashboard />)
+    await screen.findByText('João Pereira')
+
+    await user.click(screen.getByRole('button', { name: 'Remover João Pereira' }))
+    await user.click(screen.getByRole('button', { name: 'Remover' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Não foi possível remover/)
+    expect(screen.getByText('João Pereira')).toBeInTheDocument()
   })
 
   it('mostra mensagem quando o carregamento falha', async () => {

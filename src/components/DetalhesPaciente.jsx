@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { ArrowLeft, Phone, Calendar, FileText, Plus, ClipboardList } from 'lucide-react'
+import MensagemErro from './MensagemErro'
 import { formatarDataNota } from '../utils/datas'
 import { descreverProximaSessao, obterProximaMarcacao } from '../utils/marcacoes'
 import { ESTADOS, LIMITE_NOTA } from '../utils/pacientes'
@@ -10,6 +11,7 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
   const [textoNota, setTextoNota] = useState('')
   const [proximaSessao, setProximaSessao] = useState('A calcular...')
   const [motivoSessao, setMotivoSessao] = useState('')
+  const [erro, setErro] = useState(null)
 
   useEffect(() => {
     if (!paciente) return
@@ -51,9 +53,10 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
       texto: texto.slice(0, LIMITE_NOTA),
     }
 
-    const sucesso = await aoAtualizar({ ...paciente, notas: [novaNota, ...notas] })
+    const erroGuardar = await aoAtualizar({ ...paciente, notas: [novaNota, ...notas] })
     // Só limpa o texto se gravou — se falhar, a nota escrita não se perde.
-    if (sucesso !== false) setTextoNota('')
+    setErro(erroGuardar ?? null)
+    if (!erroGuardar) setTextoNota('')
   }
 
   return (
@@ -61,6 +64,8 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
       <button className="btn-voltar" onClick={aoVoltar}>
         <ArrowLeft size={16} /> Voltar aos pacientes
       </button>
+
+      <MensagemErro mensagem={erro} aoFechar={() => setErro(null)} />
 
       <div className="detalhes-header">
         <div className="detalhes-header-left">
@@ -75,9 +80,9 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
           className="badge-select"
           aria-label="Estado do tratamento"
           value={paciente.estado}
-          onChange={(e) => {
-            const pacienteAtualizado = { ...paciente, estado: e.target.value }
-            aoAtualizar(pacienteAtualizado) 
+          onChange={async (e) => {
+            const erroGuardar = await aoAtualizar({ ...paciente, estado: e.target.value })
+            setErro(erroGuardar ?? null)
           }}
         >
           {ESTADOS.map((estado) => (

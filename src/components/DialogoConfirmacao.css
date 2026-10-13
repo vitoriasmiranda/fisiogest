@@ -1,0 +1,116 @@
+.dialogo-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 2000;
+  animation: dialogo-aparecer 0.15s ease-out;
+}
+
+.dialogo-caixa {
+  background: white;
+  border-radius: 12px;
+  padding: 28px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+  text-align: center;
+  animation: dialogo-subir 0.15s ease-out;
+}
+
+.dialogo-icone {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ccfbf1;
+  color: #0d9488;
+}
+
+.dialogo-icone.perigo {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.dialogo-caixa h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.dialogo-caixa p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.dialogo-acoes {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.dialogo-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.15s;
+}
+
+.dialogo-btn.secundario {
+  background: white;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+.dialogo-btn.secundario:hover { background: #f1f5f9; }
+
+.dialogo-btn.principal { background: #0d9488; color: white; }
+.dialogo-btn.principal:hover { background: #0f766e; }
+
+.dialogo-btn.perigo { background: #dc2626; color: white; }
+.dialogo-btn.perigo:hover { background: #b91c1c; }
+
+.dialogo-btn:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
+}
+
+/* Aviso de erro dentro da página (substitui o alert) */
+.mensagem-erro {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.mensagem-erro span { flex: 1; }
+
+.mensagem-erro button {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+}
+
+@keyframes dialogo-aparecer { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dialogo-subir { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
