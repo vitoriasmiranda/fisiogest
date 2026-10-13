@@ -7,10 +7,13 @@ import Login from './components/Login'
 
 function App() {
   const [session, setSession] = useState(null)
+  // Enquanto o Supabase verifica a sessão guardada, não mostramos o login (evita o "piscar" do ecrã).
+  const [aVerificarSessao, setAVerificarSessao] = useState(true)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
+      setAVerificarSessao(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -28,6 +31,10 @@ function App() {
   const navegar = (pagina) => {
     setPaginaAtual(pagina)
     setMenuAberto(false)
+  }
+
+  if (aVerificarSessao) {
+    return <div className="a-carregar" aria-busy="true" style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>A carregar...</div>
   }
 
   if (!session) {

@@ -1,94 +1,59 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../supabase' 
+import { supabase } from '../supabase'
 import { ArrowLeft, Phone, Calendar, FileText, Plus, ClipboardList } from 'lucide-react'
+import { formatarDataNota } from '../utils/datas'
+import { descreverProximaSessao, obterProximaMarcacao } from '../utils/marcacoes'
+import { ESTADOS, LIMITE_NOTA } from '../utils/pacientes'
 import './DetalhesPaciente.css'
 
 function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
   const [textoNota, setTextoNota] = useState('')
-  const [proximaSessao, setProximaSessao] = useState('A calcular...') 
-  const [motivoSessao, setMotivoSessao] = useState('') 
+  const [proximaSessao, setProximaSessao] = useState('A calcular...')
+  const [motivoSessao, setMotivoSessao] = useState('')
 
   useEffect(() => {
-    const buscarProximaSessao = async () => {
-      if (!paciente) return;
+    if (!paciente) return
+    let ativo = true
 
+    const buscarProximaSessao = async () => {
       const { data, error } = await supabase
         .from('marcacoes')
-        .select('data, hora, motivo')
-        .eq('pacienteId', paciente.id) 
+        .select('data, hora, motivo, pacienteId')
+        .eq('pacienteId', paciente.id)
+      if (!ativo) return
 
       if (error) {
-        console.error("Erro ao buscar sessões:", error)
+        console.error('Erro ao buscar sessões:', error)
         setProximaSessao('Erro ao carregar')
         return
       }
-
-      if (data && data.length > 0) {
-        const hoje = new Date()
-        hoje.setHours(0, 0, 0, 0)
-
-        const consultasFuturas = data.filter(m => {
-          const [ano, mes, dia] = m.data.split('-')
-          const dataConsulta = new Date(ano, mes - 1, dia)
-          return dataConsulta >= hoje
-        })
-
-        if (consultasFuturas.length === 0) {
-          setProximaSessao("Por agendar")
-          setMotivoSessao("")
-          return
-        }
-
-        consultasFuturas.sort((a, b) => new Date(a.data) - new Date(b.data))
-        const proxima = consultasFuturas[0]
-
-        const [anoProxima, mesProxima, diaProxima] = proxima.data.split('-')
-        const dataProximaConsulta = new Date(anoProxima, mesProxima - 1, diaProxima)
-        
-        if (dataProximaConsulta.getTime() === hoje.getTime()) {
-          setProximaSessao(`Hoje, ${proxima.hora}`)
-        } else {
-          setProximaSessao(`${dataProximaConsulta.toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })}, ${proxima.hora}`)
-        }
-        
-        setMotivoSessao(proxima.motivo)
-        
-      } else {
-        setProximaSessao("Por agendar")
-        setMotivoSessao("")
-      }
+      const agora = new Date()
+      const proxima = obterProximaMarcacao(data ?? [], paciente.id, agora)
+      setProximaSessao(descreverProximaSessao(proxima, agora))
+      setMotivoSessao(proxima?.motivo ?? '')
     }
 
     buscarProximaSessao()
+    return () => { ativo = false }
   }, [paciente])
 
-  if (!paciente) return null;
+  if (!paciente) return null
 
   const notas = paciente.notas || []
 
-  const registarNota = () => {
-    if (textoNota.trim() === '') return;
-
-    const dataAtual = new Date();
-    const dia = dataAtual.getDate();
-    const meses = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
-    const mes = meses[dataAtual.getMonth()];
-    const ano = dataAtual.getFullYear();
-    const dataFormatada = `${dia} ${mes} ${ano}`; 
+  const registarNota = async () => {
+    const texto = textoNota.trim()
+    if (texto === '') return
 
     const novaNota = {
       id: Date.now(),
-      data: dataFormatada, 
-      texto: textoNota
+      data: formatarDataNota(new Date()),
+      texto: texto.slice(0, LIMITE_NOTA),
     }
 
-    const pacienteAtualizado = { 
-      ...paciente, 
-      notas: [novaNota, ...notas]
-    }
-
-    aoAtualizar(pacienteAtualizado)
-    setTextoNota('') 
+    const sucesso = await aoAtualizar({ ...paciente, notas: [novaNota, ...notas] })
+    // Só limpa o texto se gravou — se falhar, a nota escrita não se perde.
+    if (sucesso !== false) setTextoNota('')
   }
 
   return (
@@ -108,16 +73,16 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
         
         <select 
           className="badge-select"
+          aria-label="Estado do tratamento"
           value={paciente.estado}
           onChange={(e) => {
             const pacienteAtualizado = { ...paciente, estado: e.target.value }
             aoAtualizar(pacienteAtualizado) 
           }}
         >
-          <option value="Em avaliação">Em avaliação</option>
-          <option value="Em tratamento">Em tratamento</option>
-          <option value="Em pausa">Em pausa</option>
-          <option value="Alta médica">Alta médica</option>
+          {ESTADOS.map((estado) => (
+            <option key={estado} value={estado}>{estado}</option>
+          ))}
         </select>
       </div>
 
@@ -138,7 +103,6 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
                 <span>Próxima sessão: {proximaSessao}</span>
               </div>
               
-              {}
               {motivoSessao && (
                 <div className="dado-item" style={{ marginTop: '8px', color: '#0d9488', fontWeight: '500' }}>
                   <ClipboardList size={16} color="#0d9488" />
@@ -164,18 +128,20 @@ function DetalhesPaciente({ paciente, aoVoltar, aoAtualizar }) {
             <h3>Notas de evolução</h3>
             
             <div className="adicionar-nota">
-              <label>Adicionar nota da sessão</label>
-              <textarea 
-                rows="4" 
+              <label htmlFor="nova-nota">Adicionar nota da sessão</label>
+              <textarea
+                id="nova-nota"
+                rows="4"
+                maxLength={LIMITE_NOTA}
                 placeholder="Descreva a evolução do paciente nesta sessão..."
                 value={textoNota}
                 onChange={(e) => setTextoNota(e.target.value)}
               ></textarea>
               <div className="nota-footer">
                 <span className="ajuda">A nota fica registada com a data de hoje.</span>
-                <span className="contador">{textoNota.length}/1000</span>
+                <span className="contador">{textoNota.length}/{LIMITE_NOTA}</span>
               </div>
-              <button className="btn-registar-nota" onClick={registarNota}>
+              <button className="btn-registar-nota" onClick={registarNota} disabled={textoNota.trim() === ''}>
                 <Plus size={16} /> Registar nota
               </button>
             </div>

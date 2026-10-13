@@ -1,16 +1,59 @@
-# React + Vite
+# FisioGest
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Sistema de gestão para clínicas de fisioterapia: ficha de pacientes, notas de evolução e agenda de sessões.
 
-Currently, two official plugins are available:
+Feito com **React 19 + Vite** e **Supabase** (autenticação e base de dados).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Funcionalidades
 
-## React Compiler
+- Login da equipa (Supabase Auth)
+- Lista de pacientes com pesquisa (por nome ou condição, ignora acentos) e estatísticas do dia
+- Ficha do paciente: dados, histórico clínico, estado do tratamento e notas de evolução
+- Agenda com vista de dia e de mês, deteção de horários ocupados
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Como correr
 
-## Expanding the Oxlint configuration
+```bash
+npm install
+cp .env.example .env   # preencha com o URL e a chave anon do seu projeto Supabase
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Scripts
+
+| Comando                 | O que faz                                   |
+| ----------------------- | ------------------------------------------- |
+| `npm run dev`           | Servidor de desenvolvimento                 |
+| `npm run build`         | Build de produção em `dist/`                |
+| `npm run lint`          | Lint com oxlint                             |
+| `npm test`              | Testes em modo watch                        |
+| `npm run test:run`      | Corre os testes uma vez                     |
+| `npm run test:coverage` | Testes + relatório de cobertura (`coverage/`) |
+
+## Testes
+
+Vitest + Testing Library. O Supabase é substituído por um mock em memória
+(`src/test/supabaseMock.js`), por isso os testes não precisam de rede nem de credenciais.
+
+- `src/utils/*.test.js` — regras de negócio puras (datas, conflitos de horário, validação, pesquisa)
+- `src/components/*.test.jsx` e `src/pages/*.test.jsx` — comportamento dos ecrãs como o utilizador os usa
+- `src/App.test.jsx` — fluxo de login, navegação e logout
+
+Os testes correm automaticamente no GitHub Actions a cada push/PR (`.github/workflows/testes.yml`).
+
+## Estrutura
+
+```
+src/
+  components/   Login, Sidebar, modais, ficha do paciente
+  pages/        Dashboard (pacientes) e Agenda
+  utils/        lógica pura e testável (datas, marcações, pacientes)
+  test/         configuração e mock do Supabase
+supabase/
+  seguranca.sql RLS, restrições e validações recomendadas para a base de dados
+```
+
+## Segurança
+
+A chave `VITE_SUPABASE_KEY` é pública (vai no JavaScript do navegador). A proteção dos dados
+clínicos depende de **Row Level Security** no Supabase — veja `supabase/seguranca.sql`.
