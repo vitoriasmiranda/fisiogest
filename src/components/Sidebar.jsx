@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Activity, Users, Calendar, PanelLeftClose, PanelLeftOpen, LogOut } from 'lucide-react'
 import { supabase } from '../supabase'
+import { useConfirmacao } from '../hooks/useConfirmacao'
 import './Sidebar.css'
 
 function Sidebar({ paginaAtual, setPaginaAtual, recolhido, setRecolhido, aberta }) {
@@ -12,11 +13,15 @@ function Sidebar({ paginaAtual, setPaginaAtual, recolhido, setRecolhido, aberta 
     return () => window.removeEventListener('resize', aoRedimensionar)
   }, [])
 
+  const [dialogo, confirmar] = useConfirmacao()
+
   const terminarSessao = async () => {
-    const confirmar = window.confirm("Tem a certeza que deseja sair do sistema?")
-    if (confirmar) {
-      await supabase.auth.signOut()
-    }
+    const ok = await confirmar({
+      titulo: 'Terminar sessão?',
+      mensagem: 'Vai precisar de iniciar sessão novamente para aceder ao FisioGest.',
+      textoConfirmar: 'Sair',
+    })
+    if (ok) await supabase.auth.signOut()
   }
 
   const compacto = recolhido && !mobile
@@ -113,6 +118,7 @@ function Sidebar({ paginaAtual, setPaginaAtual, recolhido, setRecolhido, aberta 
         </div>
       )}
 
+      {dialogo}
     </aside>
   )
 }

@@ -1,24 +1,27 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
 import { Activity } from 'lucide-react'
+import MensagemErro from './MensagemErro'
 import './Login.css'
 
 export default function Login() {
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [erro, setErro] = useState(null)
 
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
-    
+    setErro(null)
+
     const { error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,
     })
 
     if (error) {
-      alert("Erro ao iniciar sessão: Verifique o seu email e palavra-passe.")
+      setErro('Email ou palavra-passe incorretos. Verifique e tente novamente.')
     }
     setLoading(false)
   }
@@ -33,9 +36,11 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleLogin} className="login-form">
+          <MensagemErro mensagem={erro} />
           <div className="form-group">
-            <label>Email</label>
+            <label htmlFor="login-email">Email</label>
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -45,8 +50,9 @@ export default function Login() {
           </div>
           
           <div className="form-group">
-            <label>Palavra-passe</label>
+            <label htmlFor="login-password">Palavra-passe</label>
             <input
+              id="login-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

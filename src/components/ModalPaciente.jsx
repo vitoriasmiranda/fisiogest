@@ -1,105 +1,122 @@
 import { useState } from 'react'
 import { X, Lock, UserPlus } from 'lucide-react'
+import MensagemErro from './MensagemErro'
+import { criarPaciente, LIMITE_HISTORICO, validarPaciente } from '../utils/pacientes'
 import './ModalPaciente.css'
 
+const estiloErro = { color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }
+
 function ModalPaciente({ aoFechar, aoGuardar }) {
-  const [nome, setNome] = useState('')
-  const [idade, setIdade] = useState('')
-  const [contato, setContato] = useState('')
-  const [condicao, setCondicao] = useState('')
-  const [historico, setHistorico] = useState('')
+  const [form, setForm] = useState({ nome: '', idade: '', contacto: '', condicao: '', historico: '' })
+  const [erros, setErros] = useState({})
+  const [aGuardar, setAGuardar] = useState(false)
+  const [erroGuardar, setErroGuardar] = useState(null)
 
-  const lidarComGuarda = () => {
-    if (!nome || !idade || !contato || !condicao) {
-      alert("Por favor, preencha todos os campos obrigatórios (*).")
-      return
-    }
-
-    const iniciais = nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-
-    const novoPaciente = {
-      id: Date.now(), 
-      iniciais: iniciais,
-      nome: nome,
-      idade: idade,
-      condicao: condicao,
-      proximaSessao: 'Por agendar',
-      contacto: contato,
-      estado: 'Em avaliação',
-      historico: historico
-    }
-
-    aoGuardar(novoPaciente)
-    aoFechar()
+  const alterar = (campo) => (e) => {
+    setForm((atual) => ({ ...atual, [campo]: e.target.value }))
+    if (erros[campo]) setErros((atuais) => ({ ...atuais, [campo]: undefined }))
   }
+
+  const lidarComGuarda = async (e) => {
+    e.preventDefault()
+    const novosErros = validarPaciente(form)
+    setErros(novosErros)
+    if (Object.keys(novosErros).length > 0) return
+
+    setAGuardar(true)
+    setErroGuardar(null)
+    const erro = await aoGuardar(criarPaciente(form))
+    setAGuardar(false)
+    // Só fecha quando o Supabase confirmou — se falhar, os dados escritos não se perdem.
+    if (erro) setErroGuardar(erro)
+    else aoFechar()
+  }
+
+  const mostrarErro = (campo) =>
+    erros[campo] ? <span role="alert" style={estiloErro}>{erros[campo]}</span> : null
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content large">
+      <div className="modal-content large" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-paciente">
         <div className="modal-header">
           <div>
-            <h2>Adicionar Novo Paciente</h2>
+            <h2 id="titulo-modal-paciente">Adicionar Novo Paciente</h2>
             <p className="modal-subtitle">Preencha a ficha de admissão. Os campos assinalados com <span className="required">*</span> são obrigatórios.</p>
           </div>
-          <button className="btn-fechar" onClick={aoFechar}><X size={24} /></button>
+          <button className="btn-fechar" onClick={aoFechar} aria-label="Fechar"><X size={24} /></button>
         </div>
 
-        <form className="modal-form">
+        <form className="modal-form" onSubmit={lidarComGuarda} noValidate>
+          <MensagemErro mensagem={erroGuardar} />
           <div className="form-group">
-            <label>Nome <span className="required">*</span></label>
-            <input 
-              type="text" 
-              placeholder="Introduza o nome completo do paciente" 
-              value={nome} 
-              onChange={(e) => setNome(e.target.value)} 
+            <label htmlFor="paciente-nome">Nome <span className="required">*</span></label>
+            <input
+              id="paciente-nome"
+              type="text"
+              placeholder="Introduza o nome completo do paciente"
+              value={form.nome}
+              onChange={alterar('nome')}
+              aria-invalid={!!erros.nome}
             />
+            {mostrarErro('nome')}
           </div>
-          
+
           <div className="form-row">
             <div className="form-group">
-              <label>Idade <span className="required">*</span></label>
-              <input 
-                type="number" 
-                placeholder="Anos" 
-                value={idade} 
-                onChange={(e) => setIdade(e.target.value)} 
+              <label htmlFor="paciente-idade">Idade <span className="required">*</span></label>
+              <input
+                id="paciente-idade"
+                type="number"
+                min="0"
+                max="120"
+                placeholder="Anos"
+                value={form.idade}
+                onChange={alterar('idade')}
+                aria-invalid={!!erros.idade}
               />
-              <span className="helper-text">Anos completados.</span>
+              {erros.idade ? mostrarErro('idade') : <span className="helper-text">Anos completados.</span>}
             </div>
 
             <div className="form-group">
-              <label>Contato telefónico <span className="required">*</span></label>
-              <input 
-                type="text" 
-                placeholder="Número de telefone ou telemóvel" 
-                value={contato} 
-                onChange={(e) => setContato(e.target.value)} 
+              <label htmlFor="paciente-contacto">Contato telefónico <span className="required">*</span></label>
+              <input
+                id="paciente-contacto"
+                type="tel"
+                placeholder="Número de telefone ou telemóvel"
+                value={form.contacto}
+                onChange={alterar('contacto')}
+                aria-invalid={!!erros.contacto}
               />
-              <span className="helper-text">Usado para os lembretes das sessões.</span>
+              {erros.contacto ? mostrarErro('contacto') : <span className="helper-text">Usado para os lembretes das sessões.</span>}
             </div>
           </div>
 
           <div className="form-group">
-            <label>Motivo da consulta <span className="required">*</span></label>
-            <input 
-              type="text" 
-              placeholder="Condição clínica ou diagnóstico principal" 
-              value={condicao} 
-              onChange={(e) => setCondicao(e.target.value)} 
+            <label htmlFor="paciente-condicao">Motivo da consulta <span className="required">*</span></label>
+            <input
+              id="paciente-condicao"
+              type="text"
+              placeholder="Condição clínica ou diagnóstico principal"
+              value={form.condicao}
+              onChange={alterar('condicao')}
+              aria-invalid={!!erros.condicao}
             />
+            {mostrarErro('condicao')}
           </div>
 
           <div className="form-group">
-            <label>Histórico clínico</label>
-            <textarea 
-              rows="4" 
-              placeholder="Adicione notas clínicas ou observações relevantes..." 
-              value={historico} 
-              onChange={(e) => setHistorico(e.target.value)}
+            <label htmlFor="paciente-historico">Histórico clínico</label>
+            <textarea
+              id="paciente-historico"
+              rows="4"
+              maxLength={LIMITE_HISTORICO}
+              placeholder="Adicione notas clínicas ou observações relevantes..."
+              value={form.historico}
+              onChange={alterar('historico')}
             ></textarea>
             <div className="textarea-footer">
               <span className="helper-text">Inclua doenças anteriores, cirurgias, medicação atual e alergias.</span>
-              <span className="char-count">{historico.length} / 2000</span>
+              <span className="char-count">{form.historico.length} / {LIMITE_HISTORICO}</span>
             </div>
           </div>
 
@@ -108,12 +125,12 @@ function ModalPaciente({ aoFechar, aoGuardar }) {
               <Lock size={14} color="#64748b" />
               <span>Os dados clínicos são usados apenas pela equipa da clínica.</span>
             </div>
-            
+
             <div className="modal-actions">
               <button type="button" className="btn-cancelar" onClick={aoFechar}>Cancelar</button>
-              <button type="button" className="btn-guardar" onClick={lidarComGuarda}>
+              <button type="submit" className="btn-guardar" disabled={aGuardar}>
                 <UserPlus size={18} />
-                Guardar paciente
+                {aGuardar ? 'A guardar...' : 'Guardar paciente'}
               </button>
             </div>
           </div>
