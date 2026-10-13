@@ -30,6 +30,15 @@ function Agenda() {
   const adicionarNovaMarcacao = async (novaMarcacao) => {
     const { id, ...dadosParaNuvem } = novaMarcacao;
 
+    const horarioOcupado = marcacoes.some(
+      (m) => m.data === dadosParaNuvem.data && m.hora === dadosParaNuvem.hora
+    );
+
+    if (horarioOcupado) {
+      alert("⚠️ Horário indisponível! Já existe uma consulta marcada para este dia e hora.");
+      return; 
+    }
+  
     const { data, error } = await supabase
       .from('marcacoes')
       .insert([dadosParaNuvem])
@@ -40,6 +49,7 @@ function Agenda() {
       alert("Houve um erro ao guardar na nuvem!");
     } else if (data) {
       setMarcacoes([...marcacoes, data[0]]);
+      setModalAberto(false);
     }
   }
 
@@ -142,7 +152,7 @@ function Agenda() {
                       <strong>{marcacao.nomePaciente}</strong>
                       <span>{marcacao.motivo} (às {marcacao.hora})</span>
                     </div>
-                    {}
+                    
                     <button 
                       onClick={() => removerMarcacao(marcacao.id)}
                       style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px' }}
