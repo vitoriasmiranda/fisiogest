@@ -54,16 +54,45 @@ describe('<Agenda /> — vista de dia', () => {
     expect(screen.getByText('Avaliação (às 09:00)')).toBeInTheDocument()
   })
 
-  it('cancela uma marcação após confirmação', async () => {
+  it('cancela uma marcação após confirmação na janela da app', async () => {
     const user = userEvent.setup()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(<Agenda />)
     await screen.findByText('Avaliação (às 09:00)')
 
     await user.click(screen.getByRole('button', { name: 'Cancelar marcação de João Pereira às 09:00' }))
+    const dialogo = screen.getByRole('alertdialog', { name: 'Cancelar marcação?' })
+    expect(dialogo).toHaveTextContent('A sessão de João Pereira às 09:00')
+    await user.click(within(dialogo).getByRole('button', { name: 'Cancelar marcação' }))
 
     expect(screen.queryByText('Avaliação (às 09:00)')).not.toBeInTheDocument()
     expect(supabase.db.marcacoes.map((m) => m.id)).toEqual([2, 3, 4])
+  })
+
+  it('"Manter" fecha a janela sem apagar', async () => {
+    const user = userEvent.setup()
+    render(<Agenda />)
+    await screen.findByText('Avaliação (às 09:00)')
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar marcação de João Pereira às 09:00' }))
+    await user.click(screen.getByRole('button', { name: 'Manter' }))
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByText('Avaliação (às 09:00)')).toBeInTheDocument()
+    expect(supabase.db.marcacoes).toHaveLength(4)
+  })
+
+  it('mostra erro na página se o cancelamento falhar', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    supabase.falhas.marcacoes = { delete: { message: 'offline' } }
+    render(<Agenda />)
+    await screen.findByText('Avaliação (às 09:00)')
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar marcação de João Pereira às 09:00' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar marcação' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Não foi possível cancelar/)
+    expect(screen.getByText('Avaliação (às 09:00)')).toBeInTheDocument()
   })
 })
 

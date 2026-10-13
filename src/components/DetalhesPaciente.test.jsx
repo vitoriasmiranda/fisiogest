@@ -56,7 +56,7 @@ describe('<DetalhesPaciente />', () => {
 
   it('regista uma nota com a data de hoje, no topo, e limpa o campo', async () => {
     const user = userEvent.setup()
-    const aoAtualizar = vi.fn().mockResolvedValue(true)
+    const aoAtualizar = vi.fn().mockResolvedValue(null)
     render(<DetalhesPaciente paciente={paciente} aoVoltar={vi.fn()} aoAtualizar={aoAtualizar} />)
 
     await user.type(screen.getByLabelText('Adicionar nota da sessão'), '  Boa evolução  ')
@@ -68,14 +68,15 @@ describe('<DetalhesPaciente />', () => {
     expect(screen.getByLabelText('Adicionar nota da sessão')).toHaveValue('')
   })
 
-  it('mantém o texto da nota se a gravação falhar', async () => {
+  it('mantém o texto da nota e mostra o erro se a gravação falhar', async () => {
     const user = userEvent.setup()
-    render(<DetalhesPaciente paciente={paciente} aoVoltar={vi.fn()} aoAtualizar={vi.fn().mockResolvedValue(false)} />)
+    render(<DetalhesPaciente paciente={paciente} aoVoltar={vi.fn()} aoAtualizar={vi.fn().mockResolvedValue('Sem ligação')} />)
 
     await user.type(screen.getByLabelText('Adicionar nota da sessão'), 'Nota importante')
     await user.click(screen.getByRole('button', { name: /Registar nota/ }))
 
     expect(screen.getByLabelText('Adicionar nota da sessão')).toHaveValue('Nota importante')
+    expect(screen.getByRole('alert')).toHaveTextContent('Sem ligação')
   })
 
   it('o botão fica desativado com a nota vazia', async () => {

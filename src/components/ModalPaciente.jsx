@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X, Lock, UserPlus } from 'lucide-react'
+import MensagemErro from './MensagemErro'
 import { criarPaciente, LIMITE_HISTORICO, validarPaciente } from '../utils/pacientes'
 import './ModalPaciente.css'
 
@@ -9,6 +10,7 @@ function ModalPaciente({ aoFechar, aoGuardar }) {
   const [form, setForm] = useState({ nome: '', idade: '', contacto: '', condicao: '', historico: '' })
   const [erros, setErros] = useState({})
   const [aGuardar, setAGuardar] = useState(false)
+  const [erroGuardar, setErroGuardar] = useState(null)
 
   const alterar = (campo) => (e) => {
     setForm((atual) => ({ ...atual, [campo]: e.target.value }))
@@ -22,10 +24,12 @@ function ModalPaciente({ aoFechar, aoGuardar }) {
     if (Object.keys(novosErros).length > 0) return
 
     setAGuardar(true)
-    const sucesso = await aoGuardar(criarPaciente(form))
+    setErroGuardar(null)
+    const erro = await aoGuardar(criarPaciente(form))
     setAGuardar(false)
     // Só fecha quando o Supabase confirmou — se falhar, os dados escritos não se perdem.
-    if (sucesso !== false) aoFechar()
+    if (erro) setErroGuardar(erro)
+    else aoFechar()
   }
 
   const mostrarErro = (campo) =>
@@ -43,6 +47,7 @@ function ModalPaciente({ aoFechar, aoGuardar }) {
         </div>
 
         <form className="modal-form" onSubmit={lidarComGuarda} noValidate>
+          <MensagemErro mensagem={erroGuardar} />
           <div className="form-group">
             <label htmlFor="paciente-nome">Nome <span className="required">*</span></label>
             <input
