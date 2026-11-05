@@ -26,7 +26,8 @@ describe('<Login />', () => {
   it('mostra aviso na página (não um alert) quando as credenciais estão erradas', async () => {
     const user = userEvent.setup()
     const alerta = vi.spyOn(window, 'alert')
-    supabase.auth.signInWithPassword.mockResolvedValue({ error: { message: 'Invalid login' } })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    supabase.auth.signInWithPassword.mockResolvedValue({ error: { code: 'invalid_credentials', message: 'Invalid login credentials', status: 400 } })
     render(<Login />)
 
     await entrar(user)
@@ -60,5 +61,61 @@ describe('<Login />', () => {
     render(<Login />)
     expect(screen.getByText('Esqueceu a senha? Fale com a Vitória.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Esqueci minha senha/ })).not.toBeInTheDocument()
+  })
+
+  it('servidor fora do ar ou pausado NÃO diz que a senha está errada', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    supabase.auth.signInWithPassword.mockResolvedValue({ error: { name: 'AuthRetryableFetchError', message: 'Failed to fetch', status: 0 } })
+    render(<Login />)
+
+    await entrar(user)
+
+    const aviso = await screen.findByRole('alert')
+    expect(aviso).toHaveTextContent(/Não foi possível conectar/)
+    expect(aviso).not.toHaveTextContent(/incorretos/)
+  })
+
+  it('sem internet (a chamada falha) também mostra erro de conexão', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    supabase.auth.signInWithPassword.mockRejectedValue(new TypeError('Failed to fetch'))
+    render(<Login />)
+
+    await entrar(user)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Não foi possível conectar/)
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeEnabled()
+  })
+
+  it('o olho mostra e esconde a senha', async () => {
+    const user = userEvent.setup()
+    render(<Login />)
+    const campo = screen.getByLabelText('Senha')
+    expect(campo).toHaveAttribute('type', 'password')
+
+    await user.click(screen.getByRole('button', { name: 'Mostrar senha' }))
+    expect(campo).toHaveAttribute('type', 'text')
+
+    await user.click(screen.getByRole('button', { name: 'Esconder senha' }))
+    expect(campo).toHaveAttribute('type', 'password')
+  })
+
+  it('o botão do olho não envia o formulário', async () => {
+    const user = userEvent.setup()
+    render(<Login />)
+    await user.type(screen.getByPlaceholderText('seu@email.com'), 'fisio@clinica.pt')
+    await user.type(screen.getByLabelText('Senha'), 'segredo123')
+    await user.click(screen.getByRole('button', { name: 'Mostrar senha' }))
+    expect(supabase.auth.signInWithPassword).not.toHaveBeenCalled()
+  })
+
+  it('ignora espaços no início e no fim do e-mail', async () => {
+    const user = userEvent.setup()
+    render(<Login />)
+    await user.type(screen.getByPlaceholderText('seu@email.com'), ' fisio@clinica.pt ')
+    await user.type(screen.getByLabelText('Senha'), 'segredo123')
+    await user.click(screen.getByRole('button', { name: 'Entrar' }))
+    expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({ email: 'fisio@clinica.pt', password: 'segredo123' })
   })
 })
